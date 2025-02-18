@@ -1,6 +1,6 @@
 {
   "name": "action-docker-readme",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "This action will create the README.md for my container image builds on github and Docker hub.",
   "main": "index.js",
   "scripts": {
