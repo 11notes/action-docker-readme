@@ -24,7 +24,7 @@ class README{
       patches:'# PATCHED CVE 🦟',
       tags:'# MAIN TAGS 🏷️',
       defaults:'# DEFAULT SETTINGS 🗃️',
-      sarif:'# SECURITY VULNERABILITIES REPORT ⚠️',
+      sarif:'# SECURITY VULNERABILITIES REPORT ⚡',
     },
     content:{
       shields:`${[
@@ -91,7 +91,7 @@ class README{
 
     this.#footer = [
       this.#default.content.sarif,
-      `\r\n\r\n# ElevenNotes™️\r\nThis image is provided to you at your own risk. Always make backups before updating an image to a different version. Check the [releases](https://github.com/11notes/docker-${this.#json.name}/releases) for breaking changes. If you have any problems with using this image simply raise an [issue](https://github.com/11notes/docker-${this.#json.name}/issues), thanks. If you have a question or inputs please create a new [discussion](https://github.com/11notes/docker-${this.#json.name}/discussions) instead of an issue. You can find all my other repositories on [github](https://github.com/11notes?tab=repositories).`,
+      `# ElevenNotes™️\r\nThis image is provided to you at your own risk. Always make backups before updating an image to a different version. Check the [releases](https://github.com/11notes/docker-${this.#json.name}/releases) for breaking changes. If you have any problems with using this image simply raise an [issue](https://github.com/11notes/docker-${this.#json.name}/issues), thanks. If you have a question or inputs please create a new [discussion](https://github.com/11notes/docker-${this.#json.name}/discussions) instead of an issue. You can find all my other repositories on [github](https://github.com/11notes?tab=repositories).`,
     ];
 
     this.#create();
@@ -116,6 +116,16 @@ class README{
     core.info(`json: ${inspect(this.#json, {showHidden:true, depth:null})}`);
   }
 
+  #CVSS3_1severityToText(severity){
+    switch(true){
+      case severity <= 0: return('None');
+      case severity > 0 && severity <= 3.9: return('Low');
+      case severity >= 4 && severity <= 6.9: return('Medium');
+      case severity >= 7 && severity <= 8.9: return('High');
+      case severity >= 9: return('Critical');
+    }
+  }
+
   #parseInputs(opt){
     if(opt?.sarif_file){
       // check and parse for sarif_file
@@ -128,6 +138,7 @@ class README{
           if(Array.isArray(sarif?.runs) && /grype/i.test(sarif?.runs[0]?.tool?.driver?.name)){
             for(const rules of sarif.runs[0].tool.driver?.rules){
               const severity = parseFloat(rules?.properties?.['security-severity']);
+              const severityHuman = this.#CVSS3_1severityToText(severity);
               if(severity >= (this.#json?.readme?.grype?.severity || 4)){
                 const a = rules?.help?.markdown.split('| --- |\n');
                 if(Array.isArray(a) && a.length >= 1){
@@ -135,13 +146,13 @@ class README{
                   report.push({
                     id:rules.id,
                     severity:severity,
-                    markdown:markdown.replace(/^\|\s+(\S+)\s+\|/i, `| ${severity} |`),
+                    markdown:markdown.replace(/^\|\s+(\S+)\s+\|/i, `| ${severity} (${severityHuman}) |`),
                   });
                 }else{
                   core.warning(`could not parse sarif rule ${rules.id}`);
                 }
               }else{
-                core.info(`${rules.id} with severity ${severity} skipped`);
+                core.info(`${rules.id} with severity ${severity} (${severityHuman}) skipped`);
               }
             }
             if(report.length > 0){
@@ -155,7 +166,7 @@ class README{
               for(const CVE of report){
                 markdown.push(CVE.markdown);
               }
-              this.#default.content.sarif = `${this.#default.title.sarif}}\r\n${markdown.join("\r\n")}`
+              this.#default.content.sarif = `${this.#default.title.sarif}\r\n${markdown.join("\r\n")}`
             }
           }else{
             core.warning(`could not parse sarif file (not a grype report)`);
@@ -275,7 +286,7 @@ class README{
         output.footer.push(e);
       }
     }
-    output.markdown += output.footer.join("\r\n\r\n");
+    output.markdown += `\r\n\r\n${output.footer.join("\r\n\r\n")}`;
 
     for(const k in this.#env){
       output.markdown = output.markdown.replace(new RegExp(`\\\${{ ${String(k).toLowerCase()} }}`, 'ig'), this.#env[k]);
