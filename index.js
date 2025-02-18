@@ -1,6 +1,6 @@
-const fs = require('fs');
-const util = require('util');
-const path = require('path');
+const fs = require('node:fs');
+const { inspect } = require('node:util');
+const path = require('node:path');
 const core = require('@actions/core');
 
 class README{
@@ -112,6 +112,8 @@ class README{
         break;
       }
     });
+
+    core.info(`json: ${inspect(this.#json, {showHidden:true, depth:null})}`);
   }
 
   #parseInputs(opt){
@@ -126,7 +128,7 @@ class README{
           if(Array.isArray(sarif?.runs) && /grype/i.test(sarif?.runs[0]?.tool?.driver?.name)){
             for(const rules of sarif.runs[0].tool.driver?.rules){
               const severity = parseFloat(rules?.properties?.['security-severity']);
-              if(severity >= (this.#json?.readme?.grype?.severity || 7)){
+              if(severity >= (this.#json?.readme?.grype?.severity || 4)){
                 const a = rules?.help?.markdown.split('| --- |\n');
                 if(Array.isArray(a) && a.length >= 1){
                   const markdown = a[1];

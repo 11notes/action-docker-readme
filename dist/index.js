@@ -25763,6 +25763,22 @@ module.exports = require("node:events");
 
 /***/ }),
 
+/***/ 3024:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:fs");
+
+/***/ }),
+
+/***/ 6760:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:path");
+
+/***/ }),
+
 /***/ 7075:
 /***/ ((module) => {
 
@@ -27555,9 +27571,9 @@ module.exports = parseParams
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-const fs = __nccwpck_require__(9896);
-const util = __nccwpck_require__(9023);
-const path = __nccwpck_require__(6928);
+const fs = __nccwpck_require__(3024);
+const { inspect } = __nccwpck_require__(7975);
+const path = __nccwpck_require__(6760);
 const core = __nccwpck_require__(8654);
 
 class README{
@@ -27669,6 +27685,8 @@ class README{
         break;
       }
     });
+
+    core.info(`json: ${inspect(this.#json, {showHidden:true, depth:null})}`);
   }
 
   #parseInputs(opt){
@@ -27683,7 +27701,7 @@ class README{
           if(Array.isArray(sarif?.runs) && /grype/i.test(sarif?.runs[0]?.tool?.driver?.name)){
             for(const rules of sarif.runs[0].tool.driver?.rules){
               const severity = parseFloat(rules?.properties?.['security-severity']);
-              if(severity >= (this.#json?.readme?.grype?.severity || 7)){
+              if(severity >= (this.#json?.readme?.grype?.severity || 4)){
                 const a = rules?.help?.markdown.split('| --- |\n');
                 if(Array.isArray(a) && a.length >= 1){
                   const markdown = a[1];
