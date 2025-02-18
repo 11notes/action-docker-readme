@@ -1,2 +1,7 @@
 maintain/
 node_modules/
+.json
+project.md
+compose.yaml
+build.dockerfile
+default.conf
