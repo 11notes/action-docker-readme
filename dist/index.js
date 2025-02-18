@@ -27683,7 +27683,7 @@ class README{
           if(Array.isArray(sarif?.runs) && /grype/i.test(sarif?.runs[0]?.tool?.driver?.name)){
             for(const rules of sarif.runs[0].tool.driver?.rules){
               const severity = parseFloat(rules?.properties?.['security-severity']);
-              if(severity >= (this.#json?.grype?.severity || 7)){
+              if(severity >= (this.#json?.readme?.grype?.severity || 7)){
                 const a = rules?.help?.markdown.split('| --- |\n');
                 if(Array.isArray(a) && a.length >= 1){
                   const markdown = a[1];
@@ -27696,7 +27696,7 @@ class README{
                   core.warning(`could not parse sarif rule ${rules.id}`);
                 }
               }else{
-                core.info(`CVE ${rules.id} with severity ${severity} skipped`);
+                core.info(`${rules.id} with severity ${severity} skipped`);
               }
             }
             if(report.length > 0){
