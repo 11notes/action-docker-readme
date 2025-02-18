@@ -24,7 +24,7 @@ class README{
       patches:'# PATCHED CVE 🦟',
       tags:'# MAIN TAGS 🏷️',
       defaults:'# DEFAULT SETTINGS 🗃️',
-      sarif:'# SECURITY VULNERABILITIES REPORT ⚠️'
+      sarif:'# SECURITY VULNERABILITIES REPORT ⚠️',
     },
     content:{
       shields:`${[
@@ -84,7 +84,7 @@ class README{
 
     this.#header = [
       '![banner](https://github.com/11notes/defaults/blob/main/static/img/banner.png?raw=true)',
-      `# \${{ distro_icon }} \${{ json_name }}\r\n${this.#default.content.shields}`,
+      `# \${{ distro_icon }}\${{ json_name }}\r\n${this.#default.content.shields}`,
       this.#json.readme.description,
       this.#default.content.tags,
     ];
@@ -126,7 +126,7 @@ class README{
           if(Array.isArray(sarif?.runs) && /grype/i.test(sarif?.runs[0]?.tool?.driver?.name)){
             for(const rules of sarif.runs[0].tool.driver?.rules){
               const severity = parseFloat(rules?.properties?.['security-severity']);
-              if(severity >= 7){
+              if(severity >= (this.#json?.grype?.severity || 7)){
                 const a = rules?.help?.markdown.split('| --- |\n');
                 if(Array.isArray(a) && a.length >= 1){
                   const markdown = a[1];
@@ -181,11 +181,12 @@ class README{
     }
 
     // check for parent image
+    this.#env['distro_icon'] = '⛰️ ';
     switch(true){
-      case /scratch/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/scratch'; break;
+      case /scratch/i.test(this.#json?.readme?.parent?.image): this.#env['distro_icon'] = ''; this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/scratch'; break;
       case /11notes\/alpine\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/r/11notes/alpine'; break;
       case /11notes\/kms\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/r/11notes/kms'; break;
-      case /ubuntu\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/ubuntu'; break;
+      case /ubuntu\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['distro_icon'] = '🍟 '; this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/ubuntu'; break;
     }
 
     // check for built
