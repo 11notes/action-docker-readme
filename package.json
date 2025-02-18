@@ -1,0 +1,25 @@
+{
+  "name": "action-docker-readme",
+  "version": "0.0.1",
+  "description": "This action will create the README.md for my container image builds on github and Docker hub.",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx ncc build index.js --license licenses.txt",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/11notes/action-docker-readme.git"
+  },
+  "keywords": [],
+  "author": "11notes",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/11notes/action-docker-readme/issues"
+  },
+  "homepage": "https://github.com/11notes/action-docker-readme#readme",
+  "dependencies": {
+    "@actions/core": "^1.2.6",
+    "@actions/github": "^4.0.0"
+  }
+}
