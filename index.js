@@ -226,7 +226,7 @@ class README{
   }
 
   #createTags(){
-    const tags = [];
+    let tags = [];
     let hasUnraid = false;
     tags.push(this.#json.semver.version);
     for(const tag in this.#json.semver){
