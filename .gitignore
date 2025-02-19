@@ -5,3 +5,4 @@ project.md
 compose.yaml
 build.dockerfile
 default.conf
+report.sarif

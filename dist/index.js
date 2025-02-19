@@ -27732,14 +27732,14 @@ class README{
               report.sort((a, b) => {return(b.severity - a.severity)});
             }
             if(report.length > 0){
-              const markdown = [
+              const markdownTable = [
                 '| Severity | Package | Version | Fix Version | Type | Location | Data Namespace | Link |',
                 '| --- | --- | --- | --- | --- | --- | --- | --- |',
               ];
               for(const CVE of report){
-                markdown.push(CVE.markdown);
+                markdownTable.push(CVE.markdown);
               }
-              this.#default.content.sarif = `${this.#default.title.sarif}\r\n${markdown.join("\r\n")}`
+              this.#default.content.sarif = `${this.#default.title.sarif}\r\n${markdownTable.join("\r\n")}`
             }
           }else{
             core.warning(`could not parse sarif file (not a grype report)`);
@@ -27888,8 +27888,9 @@ try{
   const readme = new README({
     sarif_file:core.getInput('sarif_file') || null,
   });
-}catch(e){
-  core.setFailed(`action failed with error ${e}`);
+}catch(err){
+  core.error(inspect(err, {showHidden:true, depth:null}));
+  core.setFailed(`action failed with error ${err.message}`);
 }
 module.exports = __webpack_exports__;
 /******/ })()
