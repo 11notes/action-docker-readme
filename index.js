@@ -303,6 +303,16 @@ class README{
       }
     }
 
+    // add images
+    const images = [...output.markdown.matchAll(/\${{ image:\s+(\S+) }}/ig)];
+    for(const file of images){
+      if(fs.existsSync(`./img/${file[1]}`)){
+        output.markdown = output.markdown.replace(`\${{ image: ${file[1]} }}`, `![${file[1].split('.')[0].toUpperCase()}](https://github.com/11notes/docker-${this.#json.name}/blob/master/img/${file[1]}?raw=true)`);
+      }else{
+        output.markdown = output.markdown.replace(`\${{ image: ${file[1]} }}`,`image ${file[1]} not found!`);
+      }
+    }
+
     for(const k in this.#env){
       output.markdown = output.markdown.replace(new RegExp(`\\\${{ ${String(k).toLowerCase()} }}`, 'ig'), this.#env[k]);
     }
