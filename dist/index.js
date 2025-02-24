@@ -27632,9 +27632,11 @@ class README{
       parent:"${{ title_parent }}\r\n* [${{ json_readme_parent_image }}](${{ json_readme_parent_url }})",
       source:"${{ title_source }}\r\n* [${{ json_image }}](https://github.com/11notes/docker-${{ json_name }})",
       sarif:'',
+      patches:'',
     },
     text:{
       tags:'These are the main tags for the image. There is also a tag for each commit and its shorthand sha256 value.',
+      patches:'Unlike other popular image providers, this image contains individual CVE fixes to create a clean container image even if the developers of the original app simply forgot or refuse to do that. Why not add a PR with these fixes? Well, many developers ignore PR for CVE fixes and don’t run any code security scanners against their repos. Some simply don’t care.',
     }
   };
 
@@ -27663,6 +27665,7 @@ class README{
     ];
 
     this.#footer = [
+      this.#default.content.patches,
       this.#default.content.sarif,
       `# ElevenNotes™️\r\nThis image is provided to you at your own risk. Always make backups before updating an image to a different version. Check the [releases](https://github.com/11notes/docker-${this.#json.name}/releases) for breaking changes. If you have any problems with using this image simply raise an [issue](https://github.com/11notes/docker-${this.#json.name}/issues), thanks. If you have a question or inputs please create a new [discussion](https://github.com/11notes/docker-${this.#json.name}/discussions) instead of an issue. You can find all my other repositories on [github](https://github.com/11notes?tab=repositories).`,
       `*created ${new Date().toUTCString()}*`,
@@ -27750,6 +27753,30 @@ class README{
         }
       }else{
         core.warning(`could not open sarif file at ${sarifPath}`);
+      }
+    }
+
+    if(opt?.image_build_output){
+      // find CVE fixed that were applied during build
+      const fixedCVEs = [];
+      const CVEs = [...`${opt.image_build_output}`.markdown.matchAll(/"type":"FIX","msg":"(\S+)\|(\S+)\|(\S+)\|(\S+)"/ig)];
+      for(const CVE of CVEs){
+        switch(true){
+          case /golang/i.test(CVE[1]):
+            fixedCVEs.push({
+              CVE:CVE[4],
+              Path:CVE[2],
+            });
+          break;
+        }
+      }
+
+      if(fixedCVEs.length){
+        this.#default.content.patches = `${this.#default.title.patches}\r\n${this.#default.text.patches}\r\n\r\n| ID | Path | Link |\r\n| --- | --- | --- |`;
+        const nistURL = 'https://nvd.nist.gov/vuln/detail/';
+        for(const row of fixedCVEs){
+          this.#default.content.patches += `| ${row.CVE} | ${row.Path} | [nist.gov](${nistURL}${row.CVE}) |\r\n`
+        }
       }
     }
   }
@@ -27898,6 +27925,7 @@ class README{
 try{
   const readme = new README({
     sarif_file:core.getInput('sarif_file') || null,
+    image_build_output:core.getInput('image_build_output') || null,
   });
 }catch(err){
   core.error(inspect(err, {showHidden:true, depth:null}));

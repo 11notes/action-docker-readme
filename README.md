@@ -7,19 +7,32 @@ This action will create the README.md for my container image builds on github an
 
 The grype sarif report (if present)
 
+### `image_build_output`
+
+The complete output of the build stage
+
 ### YML example 
 ```yml
-- name: grype / scan
-  id: grype-scan
-  uses: anchore/scan-action@abae793926ec39a78ab18002bc7fc45bbbd94342
+- name: build
+  id: build
+  uses: docker/build-push-action
+  with:
+    context: .
+    file: Dockerfile
+    platforms: linux/amd64,linux/arm64
+
+- name: grype
+  id: grype
+  uses: anchore/scan-action
   with:
     image: 11notes/alpine:stable
     severity-cutoff: high
     by-cve: true
     output-format: 'sarif'
 
-- name: github / create README.md
+- name: create README.md
   uses: 11notes/action-docker-readme@v1
   with:
-    sarif_file: ${{ steps.grype-scan.outputs.sarif }}
+    sarif_file: ${{ steps.grype.outputs.sarif }}
+    image_build_output: ${{ steps.build.outputs }}
 ```
