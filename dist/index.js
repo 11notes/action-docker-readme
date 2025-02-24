@@ -27756,26 +27756,32 @@ class README{
       }
     }
 
-    if(opt?.image_build_output){
-      // find CVE fixed that were applied during build
-      const fixedCVEs = [];
-      const CVEs = [...`${opt.image_build_output}`.markdown.matchAll(/"type":"FIX","msg":"(\S+)\|(\S+)\|(\S+)\|(\S+)"/ig)];
-      for(const CVE of CVEs){
-        switch(true){
-          case /golang/i.test(CVE[1]):
-            fixedCVEs.push({
-              CVE:CVE[4],
-              Path:CVE[2],
-            });
-          break;
-        }
-      }
+    if(opt?.build_log_file){
+      // check and parse log file
+      const logPath = path.resolve(opt.build_log_file);
+      if(fs.existsSync(logPath)){
+        const bytes = fs.readFileSync(logPath, 'utf-8');
 
-      if(fixedCVEs.length){
-        this.#default.content.patches = `${this.#default.title.patches}\r\n${this.#default.text.patches}\r\n\r\n| ID | Path | Link |\r\n| --- | --- | --- |`;
-        const nistURL = 'https://nvd.nist.gov/vuln/detail/';
-        for(const row of fixedCVEs){
-          this.#default.content.patches += `| ${row.CVE} | ${row.Path} | [nist.gov](${nistURL}${row.CVE}) |\r\n`
+        // find CVE fixed that were applied during build
+        const fixedCVEs = [];
+        const CVEs = [...bytes.toString().matchAll(/"type":"FIX","msg":"(\S+)\|(\S+)\|(\S+)\|(\S+)"/ig)];
+        for(const CVE of CVEs){
+          switch(true){
+            case /golang/i.test(CVE[1]):
+              fixedCVEs.push({
+                CVE:CVE[4],
+                Path:CVE[2],
+              });
+            break;
+          }
+        }
+
+        if(fixedCVEs.length){
+          this.#default.content.patches = `${this.#default.title.patches}\r\n${this.#default.text.patches}\r\n\r\n| ID | Path | Link |\r\n| --- | --- | --- |`;
+          const nistURL = 'https://nvd.nist.gov/vuln/detail/';
+          for(const row of fixedCVEs){
+            this.#default.content.patches += `| ${row.CVE} | ${row.Path} | [nist.gov](${nistURL}${row.CVE}) |\r\n`
+          }
         }
       }
     }

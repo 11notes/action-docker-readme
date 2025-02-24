@@ -7,21 +7,20 @@ This action will create the README.md for my container image builds on github an
 
 The grype sarif report (if present)
 
-### `image_build_output`
+### `build_log_file`
 
-The complete output of the build stage
+The build log of the container image
 
 ### YML example 
 ```yml
-- name: build
-  id: build
-  uses: docker/build-push-action
-  with:
-    context: .
-    file: Dockerfile
-    platforms: linux/amd64,linux/arm64
+- name: buildx to log
+  id: buildx
+  run: |
+    BUILDX_LOG=/tmp/buildx.log
+    docker buildx history logs >& ${BUILDX_LOG}
+    echo "log=${BUILDX_LOG}" >> $GITHUB_OUTPUT
 
-- name: grype
+- name: grype sarif report
   id: grype
   uses: anchore/scan-action
   with:
@@ -34,5 +33,5 @@ The complete output of the build stage
   uses: 11notes/action-docker-readme@v1
   with:
     sarif_file: ${{ steps.grype.outputs.sarif }}
-    image_build_output: ${{ steps.build.outputs }}
+    build_log_file: ${{ steps.buildx.outputs.log }}
 ```
