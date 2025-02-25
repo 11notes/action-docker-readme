@@ -463,6 +463,7 @@ try{
           const metadata = JSON.parse(core.getInput('build_output_metadata'));
           const buildID = metadata?.["buildx.build.ref"].split('/').pop();
           //opt.build_log = await run('docker', ['buildx', 'history', 'logs', buildID]);
+          core.info('executing v1');
           const docker = spawnSync('docker', ['buildx', 'history', 'logs', buildID], {encoding:'utf-8', maxBuffer:128*1024*1024, shell:true, stdio:['pipe', 'pipe', 'pipe']});
           console.log(inspect(docker, {showHidden:false, depth:null}));
           if(!docker.error){
