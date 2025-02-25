@@ -17,9 +17,9 @@ const run = async(bin, args) => {
     ps.on('close', code => {
       if(code === 0){
         if(io.stderr.length > 0 && io.stdout.length <= 0){
-          resolve(io.stderr.trim().split(/[\r\n]+/ig));
+          resolve(io.stderr.trim());
         }else{
-          resolve(io.stdout.trim().split(/[\r\n]+/ig));
+          resolve(io.stdout.trim());
         }
       }else{
         reject(io.stderr);
@@ -463,7 +463,8 @@ try{
           const metadata = JSON.parse(core.getInput('build_output_metadata'));
           const buildID = metadata?.["buildx.build.ref"].split('/').pop();
           opt.build_log = await run('docker', ['buildx', 'history', 'logs', buildID]);
-          core.info(`log of build ${buildID} has ${[...opt.build_log].reduce((a, c) => a + (c === '\n' ? 1 : 0), 0)} rows`);
+          core.info(`opt.build_log has ${[...opt.build_log].reduce((a, c) => a + (c === '\n' ? 1 : 0), 0)} rows`);
+          core.info(`opt.build_log.length = ${opt.build_log.length}`);
         }else{
           core.warning('build_output_metadata not set');
         }
