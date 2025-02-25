@@ -27845,7 +27845,6 @@ class README{
       }
     }else{
       core.warning('sarif runs is empty');
-      if(opt.debug){console.log(inspect(opt.sarif.runs, {showHidden:false, depth:null}));}
     }
 
     if(opt.build_log.length > 0){
@@ -28043,8 +28042,10 @@ try{
         // get build history from metadata
         if(core.getInput('build_output_metadata')){
           const metadata = JSON.parse(core.getInput('build_output_metadata'));
-          const ref = metadata?.["buildx.build.ref"].split('/');
-          opt.build_log = await exec('docker', ['buildx', 'history', 'logs', ref.pop()]);
+          const buildID = metadata?.["buildx.build.ref"].split('/').pop();
+          core.info(`loading ${buildID} from buildx history`);
+          opt.build_log = await exec('docker', ['buildx', 'history', 'logs', buildID]);
+          core.info(`log of build ${buildID} is ${opt.build_log.length} long`);
         }else{
           core.warning('build_output_metadata not set');
         }
@@ -28052,7 +28053,7 @@ try{
         // start creating README.md
         const readme = new README(opt);
       }catch(e){
-        core.warning(inspect(e));
+        core.warning(`exception ${e.message}`);
       }
     })();    
   }
