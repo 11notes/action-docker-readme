@@ -5,16 +5,16 @@ const path = require('node:path');
 const core = require('@actions/core');
 const args = process.argv.slice(2);
 
-const exec = async(bin, args) => {
+const run = async(bin, args) => {
   return(new Promise((resolve, reject) => {
     const param = (Array.isArray(args) ? args : args.split(' '));
-    core.info(`exec ${bin} ${param.join(' ')}`);
-    const ref = spawn(bin, param);
+    core.info(`run ${bin} ${param.join(' ')}`);
+    const ps = spawn(bin, param);
     const io = {stdout:'', stderr:''};
-    ref.stderr.on('data', data => {io.stderr += data.toString()});
-    ref.stdout.on('data', data => {io.stdout += data.toString()});
-    ref.on('error', error => {reject(error)});
-    ref.on('close', code => {
+    ps.stderr.on('data', data => {io.stderr += data.toString()});
+    ps.stdout.on('data', data => {io.stdout += data.toString()});
+    ps.on('error', error => {reject(error)});
+    ps.on('close', code => {
       if(code === 0){
         if(io.stderr.length > 0){
           reject(io.stderr);
@@ -462,12 +462,8 @@ try{
         if(core.getInput('build_output_metadata')){
           const metadata = JSON.parse(core.getInput('build_output_metadata'));
           const buildID = metadata?.["buildx.build.ref"].split('/').pop();
-          core.info(`loading ${buildID} from buildx history`);
-          await exec('docker', ['buildx', 'history', 'logs', buildID, '>&', 'buildx.log']);
-          if(fs.existsSync('buildx.log')){
-            opt.build_log = fs.readFileSync('buildx.log', 'utf-8').toString();
-            core.info(`log of build ${buildID} is ${opt.build_log.length} long`);
-          }
+          opt.build_log = await run('docker', ['buildx', 'history', 'logs', buildID]);
+          core.info(`log of build ${buildID} has ${[...opt.build_log].reduce((a, c) => a + (c === '\n' ? 1 : 0), 0)} entries`);
         }else{
           core.warning('build_output_metadata not set');
         }
