@@ -27581,7 +27581,7 @@ module.exports = parseParams
 var __webpack_exports__ = {};
 const fs = __nccwpck_require__(3024);
 const { inspect } = __nccwpck_require__(7975);
-const { spawn } = __nccwpck_require__(1421);
+const { spawn, spawnSync } = __nccwpck_require__(1421);
 const path = __nccwpck_require__(6760);
 const core = __nccwpck_require__(8654);
 const args = process.argv.slice(2);
@@ -28043,8 +28043,17 @@ try{
         if(core.getInput('build_output_metadata')){
           const metadata = JSON.parse(core.getInput('build_output_metadata'));
           const buildID = metadata?.["buildx.build.ref"].split('/').pop();
-          opt.build_log = await run('docker', ['buildx', 'history', 'logs', buildID]);
-          core.info(`log of build ${buildID} has ${[...opt.build_log].reduce((a, c) => a + (c === '\n' ? 1 : 0), 0)} entries`);
+          //opt.build_log = await run('docker', ['buildx', 'history', 'logs', buildID]);
+          const docker = spawnSync('docker', ['buildx', 'history', 'logs', buildID], {encoding:'utf-8', maxBuffer:128*1024*1024});
+          if(!docker.error){
+            opt.build_log = docker.stdout;
+            core.info(`log of build ${buildID} has ${[...opt.build_log].reduce((a, c) => a + (c === '\n' ? 1 : 0), 0)} entries`);
+            if(docker.stderr.length > 0){
+              core.warning(docker.stderr);
+            }
+          }else{
+            core.warning(docker.error);
+          }
         }else{
           core.warning('build_output_metadata not set');
         }
