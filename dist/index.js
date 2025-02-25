@@ -25747,6 +25747,14 @@ module.exports = require("net");
 
 /***/ }),
 
+/***/ 1421:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:child_process");
+
+/***/ }),
+
 /***/ 7598:
 /***/ ((module) => {
 
@@ -27573,9 +27581,33 @@ module.exports = parseParams
 var __webpack_exports__ = {};
 const fs = __nccwpck_require__(3024);
 const { inspect } = __nccwpck_require__(7975);
+const { spawn } = __nccwpck_require__(1421);
 const path = __nccwpck_require__(6760);
 const core = __nccwpck_require__(8654);
 const args = process.argv.slice(2);
+
+const exec = async(bin, args) => {
+  return(new Promise((resolve, reject) => {
+    const ref = spawn(bin, (
+      (Array.isArray(args) ? args : args.split(' '))
+    ));
+    const io = {stdout:'', stderr:''};
+    ref.stderr.on('data', data => {io.stderr += data.toString()});
+    ref.stdout.on('data', data => {io.stdout += data.toString()});
+    ref.on('error', error => {reject(error)});
+    ref.on('close', code => {
+      if(code === 0){
+        if(io.stderr.length > 0){
+          reject(io.stderr);
+        }else{
+          resolve(io.stdout.trim().split(/[\r\n]+/ig));
+        }
+      }else{
+        reject(io.stderr);
+      }
+    });
+  }));
+}
 
 class CVEReport{
   #CVEs = {};
@@ -28006,6 +28038,15 @@ try{
       debug:true,
     });
   }else{
+    (async()=>{
+      try{
+        const log = await exec('docker', ['buildx', 'history', 'logs'])
+        core.info(log);
+      }catch(e){
+        core.warning(inspect(e));
+      }
+    })();
+
     const readme = new README({
       sarif_file:core.getInput('sarif_file') || null,
       build_log_file:core.getInput('build_log_file') || null,
