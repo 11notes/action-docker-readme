@@ -27575,8 +27575,105 @@ const fs = __nccwpck_require__(3024);
 const { inspect } = __nccwpck_require__(7975);
 const path = __nccwpck_require__(6760);
 const core = __nccwpck_require__(8654);
+const args = process.argv.slice(2);
+
+class CVEReport{
+  #CVEs = {};
+  #markdown = [];
+  #fetchCache = {};
+
+  constructor(opt){
+    if(opt?.title){
+      this.#markdown.push(opt.title);
+    }
+    if(opt?.text){
+      this.#markdown.push(opt.text);
+    }
+    this.#markdown.push('| ID | Severity | Complexity | Vector | Source |');
+    this.#markdown.push('| --- | --- | --- | --- | --- |');
+  }
+
+  add(ID){
+    if(!this.#CVEs[ID]){
+      this.#CVEs[ID] = true;
+    }
+  }
+
+  async create(){
+    const CVEs = [];
+    for(const ID in this.#CVEs){
+      const update = await this.#fetch(ID);
+      if(update){
+        CVEs.push(update);
+      }
+    }
+
+    if(CVEs.length > 0){
+      CVEs.sort((a, b) => {return(b.severity - a.severity)});
+      for(const CVE of CVEs){
+        this.#markdown.push(`| ${CVE.id} | ${this.#severityToText(CVE.severity)} | ${CVE.complexity} | ${CVE.vector} | [${CVE.id}](https://nvd.nist.gov/vuln/detail/${CVE.id}) |`);
+      }
+      return(this.#markdown.join("\r\n"));
+    }else{
+      core.warning(`could not create report for ${this.#markdown[0]}`);
+      return('');
+    }
+  }
+
+  async #fetch(ID){
+    try{
+      if(this.#fetchCache[ID]){
+        return(this.#fetchCache[ID]);
+      }else{
+        const response = await fetch(`https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=${ID}`, {signal:AbortSignal.timeout(15000)});
+        if(!response.ok){
+          throw new Error('received HTTP status ${response.status');
+        }else{
+          const json = await response.json();
+          const nist = {
+            cvss:{},
+          }
+  
+          if(json?.vulnerabilities?.[0]?.cve?.metrics?.cvssMetricV31?.[0]){
+            nist.cvss = json.vulnerabilities[0].cve.metrics.cvssMetricV31[0];
+          }else if(json?.vulnerabilities?.[0]?.cve?.metrics?.cvssMetricV30?.[0]){
+            nist.cvss = json.vulnerabilities[0].cve.metrics.cvssMetricV30[0];
+          }
+  
+          if(nist.cvss?.cvssData){
+            const result = {
+              id:ID,
+              severity:nist.cvss?.cvssData?.baseScore || 0,
+              vector:nist.cvss?.cvssData?.attackVector.toLowerCase() || '',
+              complexity:nist.cvss?.cvssData?.attackComplexity.toLowerCase() || '',
+            };
+
+            this.#fetchCache[ID] = result;
+            return(result);
+          }else{
+            throw new Error('could not access cvssMetricV31 or cvssMetricV30');
+          }
+        }
+      }
+    }catch(e){
+      core.warning(`${e.message} // ${ID}`);
+      return(false);
+    }
+  }
+
+  #severityToText(severity){
+    switch(true){
+      case severity <= 0: return('none');
+      case severity > 0 && severity <= 3.9: return('low');
+      case severity >= 4 && severity <= 6.9: return('medium');
+      case severity >= 7 && severity <= 8.9: return('high');
+      case severity >= 9: return('critical');
+    }
+  }
+}
 
 class README{
+  #debug;
   #env = {};
   #header = [];
   #footer = [];
@@ -27636,7 +27733,7 @@ class README{
     },
     text:{
       tags:'These are the main tags for the image. There is also a tag for each commit and its shorthand sha256 value.',
-      patches:'Unlike other popular image providers, this image contains individual CVE fixes to create a clean container image even if the developers of the original app simply forgot or refuse to do that. Why not add a PR with these fixes? Well, many developers ignore PR for CVE fixes and don’t run any code security scanners against their repos. Some simply don’t care.',
+      patches:"Unlike other popular image providers, this image contains individual CVE fixes to create a clean container image even if the developers of the original app simply forgot or refuse to do that. Why not add a PR with these fixes? Well, many developers ignore PR for CVE fixes and don’t run any code security scanners against their repos. Some simply don’t care.\r\n\r\n",
     }
   };
 
@@ -27654,24 +27751,27 @@ class README{
 
   constructor(opt = {}){
     this.#loadFiles(); // load all files
-    this.#parseInputs(opt); // parse all possible inputs
-    this.#createVariables(); // create all dynamic and static variables
+    (async() =>{
+      this.#debug = opt?.debug || false;
+      await this.#parseInputs(opt);
+      this.#createVariables(); // create all dynamic and static variables
 
-    this.#header = [
-      '![banner](https://github.com/11notes/defaults/blob/main/static/img/banner.png?raw=true)',
-      `# \${{ distro_icon }}\${{ json_name }}\r\n${this.#default.content.shields}`,
-      this.#json.readme.description,
-      this.#default.content.tags,
-    ];
+      this.#header = [
+        '![banner](https://github.com/11notes/defaults/blob/main/static/img/banner.png?raw=true)',
+        `# \${{ distro_icon }}\${{ json_name }}\r\n${this.#default.content.shields}`,
+        this.#json.readme.description,
+        this.#default.content.tags,
+      ];
 
-    this.#footer = [
-      this.#default.content.patches,
-      this.#default.content.sarif,
-      `# ElevenNotes™️\r\nThis image is provided to you at your own risk. Always make backups before updating an image to a different version. Check the [releases](https://github.com/11notes/docker-${this.#json.name}/releases) for breaking changes. If you have any problems with using this image simply raise an [issue](https://github.com/11notes/docker-${this.#json.name}/issues), thanks. If you have a question or inputs please create a new [discussion](https://github.com/11notes/docker-${this.#json.name}/discussions) instead of an issue. You can find all my other repositories on [github](https://github.com/11notes?tab=repositories).`,
-      `*created ${new Date().toLocaleString('de-CH', { timeZone:'Europe/Zurich'})} (CET)*`,
-    ];
+      this.#footer = [
+        this.#default.content.patches,
+        this.#default.content.sarif,
+        `# ElevenNotes™️\r\nThis image is provided to you at your own risk. Always make backups before updating an image to a different version. Check the [releases](https://github.com/11notes/docker-${this.#json.name}/releases) for breaking changes. If you have any problems with using this image simply raise an [issue](https://github.com/11notes/docker-${this.#json.name}/issues), thanks. If you have a question or inputs please create a new [discussion](https://github.com/11notes/docker-${this.#json.name}/discussions) instead of an issue. You can find all my other repositories on [github](https://github.com/11notes?tab=repositories).`,
+        `*created ${new Date().toLocaleString('de-CH', { timeZone:'Europe/Zurich'})} (CET)*`,
+      ];
 
-    this.#create();
+      this.#create();
+    })();
   }
 
   #loadFiles(){
@@ -27689,62 +27789,33 @@ class README{
         break;
       }
     });
-
-    core.info(`json: ${inspect(this.#json, {showHidden:true, depth:null})}`);
   }
 
-  #CVSS3_1severityToText(severity){
-    switch(true){
-      case severity <= 0: return('None');
-      case severity > 0 && severity <= 3.9: return('Low');
-      case severity >= 4 && severity <= 6.9: return('Medium');
-      case severity >= 7 && severity <= 8.9: return('High');
-      case severity >= 9: return('Critical');
-    }
-  }
+  async #parseInputs(opt){
+    core.info(`inputs: ${inspect(opt, {showHidden:false, depth:null})}`);
 
-  #parseInputs(opt){
     if(opt?.sarif_file){
       // check and parse for sarif_file
       const sarifPath = path.resolve(opt.sarif_file);
       if(fs.existsSync(sarifPath)){
         const bytes = fs.readFileSync(sarifPath, 'utf-8');
         try{
-          const report = [];
+          const report = new CVEReport({
+            title:this.#default.title.sarif,
+          });
+
           const sarif = JSON.parse(bytes);
           if(Array.isArray(sarif?.runs) && /grype/i.test(sarif?.runs[0]?.tool?.driver?.name)){
             for(const rules of sarif.runs[0].tool.driver?.rules){
               const severity = parseFloat(rules?.properties?.['security-severity']);
-              const severityHuman = this.#CVSS3_1severityToText(severity);
-              if(severity >= (this.#json?.readme?.grype?.severity || 4)){
-                const a = rules?.help?.markdown.split('| --- |\n');
-                if(Array.isArray(a) && a.length >= 1){
-                  const markdown = a[1];
-                  report.push({
-                    id:rules.id,
-                    severity:severity,
-                    markdown:markdown.replace(/^\|\s+(\S+)\s+\|/i, `| ${severity} (${severityHuman}) |`),
-                  });
-                }else{
-                  core.warning(`could not parse sarif rule ${rules.id}`);
-                }
-              }else{
-                core.info(`${rules.id} with severity ${severity} (${severityHuman}) skipped`);
+              const match = rules.id.match(/(CVE-\d+-\d+)/i);
+              rules.id = match[1];
+              if(severity >= (this.#json?.readme?.grype?.severity || 7)){
+                report.add(rules.id);
               }
             }
-            if(report.length > 0){
-              report.sort((a, b) => {return(b.severity - a.severity)});
-            }
-            if(report.length > 0){
-              const markdownTable = [
-                '| Severity | Package | Version | Fix Version | Type | Location | Data Namespace | Link |',
-                '| --- | --- | --- | --- | --- | --- | --- | --- |',
-              ];
-              for(const CVE of report){
-                markdownTable.push(CVE.markdown);
-              }
-              this.#default.content.sarif = `${this.#default.title.sarif}\r\n${markdownTable.join("\r\n")}`
-            }
+
+            this.#default.content.sarif = await report.create();
           }else{
             core.warning(`could not parse sarif file (not a grype report)`);
           }
@@ -27763,27 +27834,21 @@ class README{
         const bytes = fs.readFileSync(logPath, 'utf-8');
 
         // find CVE fixed that were applied during build
-        const fixedCVEs = [];
-        const CVEs = [...bytes.toString().matchAll(/"type":"FIX","msg":"(\S+)\|(\S+)\|(\S+)\|(\S+)"/ig)];
-        for(const CVE of CVEs){
-          switch(true){
-            case /golang/i.test(CVE[1]):
-              fixedCVEs.push({
-                CVE:CVE[4],
-                Path:CVE[2],
-              });
-              core.info(`found fixed ${CVE[4]} in path ${CVE[2]}`);
-            break;
+        const report = new CVEReport({
+          title:this.#default.title.patches,
+          text:this.#default.text.patches,
+        });
+        
+        const matches = [...bytes.toString().matchAll(/"type":"FIX","msg":"CVE\|(\S+)\|(\S+)"/ig)];
+        for(const match of matches){
+          if(/amd64/ig.test(match[2])){
+            report.add(match[1]);
           }
         }
 
-        if(fixedCVEs.length){
-          this.#default.content.patches = `${this.#default.title.patches}\r\n${this.#default.text.patches}\r\n\r\n| ID | Path | Link |\r\n| --- | --- | --- |`;
-          const nistURL = 'https://nvd.nist.gov/vuln/detail/';
-          for(const row of fixedCVEs){
-            this.#default.content.patches += `| ${row.CVE} | ${row.Path} | [nist.gov](${nistURL}${row.CVE}) |\r\n`
-          }
-        }
+        this.#default.content.patches = await report.create();
+      }else{
+        core.warning(`could not open log file at ${logPath}`);
       }
     }
   }
@@ -27925,15 +27990,27 @@ class README{
     }
 
     // write file
-    fs.writeFileSync('./README.md', output.markdown);
+    if(!this.#debug){
+      fs.writeFileSync('./README.md', output.markdown);
+    }else{
+      fs.writeFileSync('./TREADME.md', output.markdown);
+    }
   }
 }
 
 try{
-  const readme = new README({
-    sarif_file:core.getInput('sarif_file') || null,
-    image_build_output:core.getInput('image_build_output') || null,
-  });
+  if(args.length && args[0] === 'debug'){
+    const readme = new README({
+      sarif_file:'report.sarif',
+      build_log_file:'buildx.log',
+      debug:true,
+    });
+  }else{
+    const readme = new README({
+      sarif_file:core.getInput('sarif_file') || null,
+      build_log_file:core.getInput('build_log_file') || null,
+    });
+  }
 }catch(err){
   core.error(inspect(err, {showHidden:true, depth:null}));
   core.setFailed(`action failed with error ${err.message}`);

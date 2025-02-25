@@ -10,3 +10,5 @@ compose.yaml
 build.dockerfile
 default.conf
 report.sarif
+buildx.log
+TREADME.md
