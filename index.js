@@ -7,9 +7,9 @@ const args = process.argv.slice(2);
 
 const exec = async(bin, args) => {
   return(new Promise((resolve, reject) => {
-    const ref = spawn(bin, (
-      (Array.isArray(args) ? args : args.split(' '))
-    ));
+    const param = (Array.isArray(args) ? args : args.split(' '));
+    core.info(`exec ${bin} ${param.join(' ')}`);
+    const ref = spawn(bin, param);
     const io = {stdout:'', stderr:''};
     ref.stderr.on('data', data => {io.stderr += data.toString()});
     ref.stdout.on('data', data => {io.stdout += data.toString()});
@@ -471,12 +471,12 @@ try{
 
         // start creating README.md
         const readme = new README(opt);
-      }catch(e){
-        core.warning(`exception ${e.message}`);
+      }catch(err){
+        core.warning(inspect(err, {showHidden:false, depth:null}));
       }
     })();    
   }
 }catch(err){
-  core.error(inspect(err, {showHidden:true, depth:null}));
+  core.error(inspect(err, {showHidden:false, depth:null}));
   core.setFailed(`action failed with error ${err.message}`);
 }
