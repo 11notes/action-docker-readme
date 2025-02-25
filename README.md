@@ -7,9 +7,9 @@ This action will create the README.md for my container image builds on github an
 
 The grype sarif report (if present)
 
-### `build_log_file`
+### `build_output_metadata`
 
-The build log of the container image
+The metadata output of the build stage
 
 ### YML example 
 ```yml

@@ -27659,7 +27659,7 @@ class CVEReport{
       }else{
         const response = await fetch(`https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=${ID}`, {signal:AbortSignal.timeout(15000)});
         if(!response.ok){
-          throw new Error('received HTTP status ${response.status');
+          throw new Error(`received HTTP status ${response.status}`);
         }else{
           const json = await response.json();
           const nist = {
@@ -27786,7 +27786,7 @@ class README{
     (async() =>{
       this.#debug = opt?.debug || false;
       await this.#parseInputs(opt);
-      this.#createVariables(); // create all dynamic and static variables
+      this.#createVariables();
 
       this.#header = [
         '![banner](https://github.com/11notes/defaults/blob/main/static/img/banner.png?raw=true)',
@@ -27824,64 +27824,47 @@ class README{
   }
 
   async #parseInputs(opt){
-    core.info(`inputs: ${inspect(opt, {showHidden:false, depth:null})}`);
+    if(opt.sarif?.runs && Array.isArray(opt.sarif.runs) && opt.sarif.runs.length > 0){
+      if(/grype/i.test(opt.sarif.runs[0]?.tool?.driver?.name)){
+        const report = new CVEReport({
+          title:this.#default.title.sarif,
+        });
 
-    if(opt?.sarif_file){
-      // check and parse for sarif_file
-      const sarifPath = path.resolve(opt.sarif_file);
-      if(fs.existsSync(sarifPath)){
-        const bytes = fs.readFileSync(sarifPath, 'utf-8');
-        try{
-          const report = new CVEReport({
-            title:this.#default.title.sarif,
-          });
-
-          const sarif = JSON.parse(bytes);
-          if(Array.isArray(sarif?.runs) && /grype/i.test(sarif?.runs[0]?.tool?.driver?.name)){
-            for(const rules of sarif.runs[0].tool.driver?.rules){
-              const severity = parseFloat(rules?.properties?.['security-severity']);
-              const match = rules.id.match(/(CVE-\d+-\d+)/i);
-              rules.id = match[1];
-              if(severity >= (this.#json?.readme?.grype?.severity || 7)){
-                report.add(rules.id);
-              }
-            }
-
-            this.#default.content.sarif = await report.create();
-          }else{
-            core.warning(`could not parse sarif file (not a grype report)`);
+        for(const rules of opt.sarif.runs[0].tool.driver?.rules){
+          const severity = parseFloat(rules?.properties?.['security-severity']);
+          const match = rules.id.match(/(CVE-\d+-\d+)/i);
+          rules.id = match[1];
+          if(severity >= (this.#json?.readme?.grype?.severity || 7)){
+            report.add(rules.id);
           }
-        }catch(e){
-          core.warning(`could not parse sarif file`);
         }
+
+        this.#default.content.sarif = await report.create();
       }else{
-        core.warning(`could not open sarif file at ${sarifPath}`);
+        core.warning('sarif is not a valid grype report');
       }
+    }else{
+      core.warning('sarif runs is empty');
+      if(opt.debug){console.log(inspect(opt.sarif.runs, {showHidden:false, depth:null}));}
     }
 
-    if(opt?.build_log_file){
-      // check and parse log file
-      const logPath = path.resolve(opt.build_log_file);
-      if(fs.existsSync(logPath)){
-        const bytes = fs.readFileSync(logPath, 'utf-8');
-
-        // find CVE fixed that were applied during build
-        const report = new CVEReport({
-          title:this.#default.title.patches,
-          text:this.#default.text.patches,
-        });
-        
-        const matches = [...bytes.toString().matchAll(/"type":"FIX","msg":"CVE\|(\S+)\|(\S+)"/ig)];
-        for(const match of matches){
-          if(/amd64/ig.test(match[2])){
-            report.add(match[1]);
-          }
+    if(opt.build_log.length > 0){
+      // find CVE fixed that were applied during build
+      const report = new CVEReport({
+        title:this.#default.title.patches,
+        text:this.#default.text.patches,
+      });
+      
+      const matches = [...opt.build_log.toString().matchAll(/"type":"FIX","msg":"CVE\|(\S+)\|(\S+)"/ig)];
+      for(const match of matches){
+        if(/amd64/ig.test(match[2])){
+          report.add(match[1]);
         }
-
-        this.#default.content.patches = await report.create();
-      }else{
-        core.warning(`could not open log file at ${logPath}`);
       }
+
+      this.#default.content.patches = await report.create();
+    }else{
+      core.warning('build log is empty');
     }
   }
 
@@ -28033,24 +28016,45 @@ class README{
 try{
   if(args.length && args[0] === 'debug'){
     const readme = new README({
-      sarif_file:'report.sarif',
-      build_log_file:'buildx.log',
+      sarif:JSON.parse(fs.readFileSync('report.sarif', 'utf-8')),
+      build_log:fs.readFileSync('buildx.log', 'utf-8').toString(),
       debug:true,
     });
   }else{
     (async()=>{
       try{
-        const log = await exec('docker', ['buildx', 'history', 'logs'])
-        core.info(log);
+        const opt = {
+          sarif:{},
+          build_log:'',
+        };
+
+        // get sarif
+        if(core.getInput('sarif_file')){
+          const sarifPath = path.resolve(core.getInput('sarif_file'));
+          if(fs.existsSync(sarifPath)){
+            opt.sarif = JSON.parse(fs.readFileSync(sarifPath, 'utf-8'));
+          }else{
+            core.warning(`no sarif file present at ${sarifPath}`);
+          }
+        }else{
+          core.warning('sarif_file not set');
+        }
+
+        // get build history from metadata
+        if(core.getInput('build_output_metadata')){
+          const metadata = JSON.parse(core.getInput('build_output_metadata'));
+          const ref = metadata?.["buildx.build.ref"].split('/');
+          opt.build_log = await exec('docker', ['buildx', 'history', 'logs', ref.pop()]);
+        }else{
+          core.warning('build_output_metadata not set');
+        }
+
+        // start creating README.md
+        const readme = new README(opt);
       }catch(e){
         core.warning(inspect(e));
       }
-    })();
-
-    const readme = new README({
-      sarif_file:core.getInput('sarif_file') || null,
-      build_log_file:core.getInput('build_log_file') || null,
-    });
+    })();    
   }
 }catch(err){
   core.error(inspect(err, {showHidden:true, depth:null}));

@@ -7,8 +7,8 @@ branding:
 inputs:
   sarif_file: 
     description: 'the grype sarif output'
-  build_log_file: 
-    description: 'the build log of the container image'
+  build_output_metadata: 
+    description: 'the metadata output of the build stage'
 runs:
   using: 'node20'
   main: 'dist/index.js'
