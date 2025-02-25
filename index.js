@@ -463,8 +463,11 @@ try{
           const metadata = JSON.parse(core.getInput('build_output_metadata'));
           const buildID = metadata?.["buildx.build.ref"].split('/').pop();
           core.info(`loading ${buildID} from buildx history`);
-          opt.build_log = await exec('docker', ['buildx', 'history', 'logs', buildID]);
-          core.info(`log of build ${buildID} is ${opt.build_log.length} long`);
+          await exec('docker', ['buildx', 'history', 'logs', buildID, '>&', 'buildx.log']);
+          if(fs.existsSync('buildx.log')){
+            opt.build_log = fs.readFileSync('buildx.log', 'utf-8').toString();
+            core.info(`log of build ${buildID} is ${opt.build_log.length} long`);
+          }
         }else{
           core.warning('build_output_metadata not set');
         }
