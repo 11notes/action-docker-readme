@@ -27024,7 +27024,7 @@ module.exports = class README{
     for(const input in inputs){
       if(core.getInput(input) || Eleven.debug){
         if(typeof(Inputs[input]) === 'function'){
-          if(Eleven.debug){
+          if(Eleven.debug && existsSync('.development')){
             inputs[input].value = inputs[input].debug;
           }else{
             inputs[input].value = core.getInput(input);
