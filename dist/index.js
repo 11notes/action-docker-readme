@@ -73,7 +73,7 @@ module.exports = { Report };
 /***/ 9097:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const { existsSync, createWriteStream, readFileSync, createReadStream } = __nccwpck_require__(3024);
+const { existsSync, createWriteStream, readFileSync, createReadStream, symlinkSync } = __nccwpck_require__(3024);
 const { Readable } = __nccwpck_require__(7075);
 const tar = __nccwpck_require__(434);
 
@@ -124,11 +124,21 @@ class Grype{
 
   static async download(){
     const files = {
+      db:'vulnerability.db',
       listing:'grype.listing.json',
       targz:'grype.db.tar.gz',
+      cache:{
+        src:'/home/runner/.cache/grype/db/5/vulnerability.db'
+      }
     };
 
-    if(!existsSync('vulnerability.db')){
+    if(existsSync(files.cache.src)){
+      symlinkSync(files.cache.src, files.db);
+      core.info(`found existing grype database at ${files.cache.src}`);
+    }
+
+    if(!existsSync(files.db)){
+      core.warning(`could not find any grype database, downloading ...`)
       try{
         const response = await fetch('https://toolbox-data.anchore.io/grype/databases/listing.json');
         if(response.ok && response.body){
@@ -142,6 +152,7 @@ class Grype{
               file:createReadStream(files.targz).path,
               sync:true
             });
+            core.info(`successfully downloaded ${files.db}`);
           }
         }
       }catch(e){

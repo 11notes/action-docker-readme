@@ -1,4 +1,4 @@
-const { existsSync, createWriteStream, readFileSync, createReadStream } = require('node:fs');
+const { existsSync, createWriteStream, readFileSync, createReadStream, symlinkSync } = require('node:fs');
 const { Readable } = require('node:stream');
 const tar = require('tar');
 
@@ -49,11 +49,21 @@ class Grype{
 
   static async download(){
     const files = {
+      db:'vulnerability.db',
       listing:'grype.listing.json',
       targz:'grype.db.tar.gz',
+      cache:{
+        src:'/home/runner/.cache/grype/db/5/vulnerability.db'
+      }
     };
 
-    if(!existsSync('vulnerability.db')){
+    if(existsSync(files.cache.src)){
+      symlinkSync(files.cache.src, files.db);
+      core.info(`found existing grype database at ${files.cache.src}`);
+    }
+
+    if(!existsSync(files.db)){
+      core.warning(`could not find any grype database, downloading ...`)
       try{
         const response = await fetch('https://toolbox-data.anchore.io/grype/databases/listing.json');
         if(response.ok && response.body){
@@ -67,6 +77,7 @@ class Grype{
               file:createReadStream(files.targz).path,
               sync:true
             });
+            core.info(`successfully downloaded ${files.db}`);
           }
         }
       }catch(e){
