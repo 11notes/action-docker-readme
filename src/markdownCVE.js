@@ -1,7 +1,7 @@
-const core = require('@actions/core');
-const Grype = require('./grype.js');
+const Eleven = require('./Eleven.js');
+const Grype = require('./Grype.js');
 
-class Report{
+module.exports = class markdownCVE{
   #CVEs = {};
   #markdown = [];
 
@@ -11,6 +11,11 @@ class Report{
     }
     if(opt?.text){
       this.#markdown.push(opt.text);
+    }
+    if(opt?.CVEs){
+      for(const CVE of opt.CVEs){
+        this.add(CVE);
+      }
     }
     this.#markdown.push('| ID | Severity | Risk | Vector | Source |');
     this.#markdown.push('| --- | --- | --- | --- | --- |');
@@ -22,14 +27,18 @@ class Report{
     }
   }
 
-  async create(){
+  create(){
     const CVEs = [];
     for(const ID in this.#CVEs){
       const update = Grype.getCVE(ID);
       if(update && update.vector.length > 0){
-        CVEs.push(update);
+        if(update.severity >= Grype.cutoff){
+          CVEs.push(update);
+        }else{
+          Eleven.debug(`skipping ${ID} due to severity cutoff (${update.severity} < ${Grype.cutoff})`)
+        }
       }else{
-        core.warning(`could not parse ${ID}, no proper result from grype database`);
+        Eleven.warning(`could not parse ${ID}, no proper result from grype database`);
       }
     }
 
@@ -40,7 +49,7 @@ class Report{
       }
       return(this.#markdown.join("\r\n"));
     }else{
-      core.warning(`could not create report for ${this.#markdown[0]}`);
+      Eleven.warning(`could not create report for ${this.#markdown[0]}`);
       return('');
     }
   }
@@ -55,5 +64,3 @@ class Report{
     }
   }
 }
-
-module.exports = { Report };

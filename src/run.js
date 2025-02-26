@@ -1,10 +1,10 @@
+const Eleven = require('./Eleven.js');
 const { spawn } = require('node:child_process');
-const core = require('@actions/core');
 
 module.exports = run = async(bin, args) => {
   return(new Promise((resolve, reject) => {
     const param = (Array.isArray(args) ? args : args.split(' '));
-    core.info(`run ${bin} ${param.join(' ')}`);
+    Eleven.debug(`run ${bin} ${param.join(' ')}`);
     const ps = spawn(bin, param, {shell:true, stdio:['pipe', 'pipe', 'pipe']});
     const io = {stdout:'', stderr:''};
     ps.stderr.on('data', data => {io.stderr += data.toString()});

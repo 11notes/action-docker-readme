@@ -9,6 +9,8 @@ inputs:
     description: 'the grype sarif output'
   build_output_metadata: 
     description: 'the metadata output of the build stage'
+  development:
+    description: 'sets Eleven.debug to true'
 runs:
   using: 'node20'
   main: 'dist/index.js'

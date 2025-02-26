@@ -1,175 +1,6 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 1330:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const core = __nccwpck_require__(8654);
-const Grype = __nccwpck_require__(9097);
-
-class Report{
-  #CVEs = {};
-  #markdown = [];
-
-  constructor(opt){
-    if(opt?.title){
-      this.#markdown.push(opt.title);
-    }
-    if(opt?.text){
-      this.#markdown.push(opt.text);
-    }
-    this.#markdown.push('| ID | Severity | Risk | Vector | Source |');
-    this.#markdown.push('| --- | --- | --- | --- | --- |');
-  }
-
-  add(ID){
-    if(!this.#CVEs[ID]){
-      this.#CVEs[ID] = true;
-    }
-  }
-
-  async create(){
-    const CVEs = [];
-    for(const ID in this.#CVEs){
-      const update = Grype.getCVE(ID);
-      if(update && update.vector.length > 0){
-        CVEs.push(update);
-      }else{
-        core.warning(`could not parse ${ID}, no proper result from grype database`);
-      }
-    }
-
-    if(CVEs.length > 0){
-      CVEs.sort((a, b) => {return(b.severity - a.severity)});
-      for(const CVE of CVEs){
-        this.#markdown.push(`| ${CVE.id} | ${this.#scoreToText(CVE.severity)} | ${this.#scoreToText(CVE.risk)} | [${CVE.vector}](https://www.first.org/cvss/calculator/3.1#${CVE.vector}) | [${CVE.id}](https://nvd.nist.gov/vuln/detail/${CVE.id}) |`);
-      }
-      return(this.#markdown.join("\r\n"));
-    }else{
-      core.warning(`could not create report for ${this.#markdown[0]}`);
-      return('');
-    }
-  }
-
-  #scoreToText(severity){
-    switch(true){
-      case severity <= 0: return('none');
-      case severity > 0 && severity <= 3.9: return('low');
-      case severity >= 4 && severity <= 6.9: return('medium');
-      case severity >= 7 && severity <= 8.9: return('high');
-      case severity >= 9: return('critical');
-    }
-  }
-}
-
-module.exports = { Report };
-
-/***/ }),
-
-/***/ 9097:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const { existsSync, createWriteStream, readFileSync, createReadStream } = __nccwpck_require__(3024);
-const { Readable } = __nccwpck_require__(7075);
-const tar = __nccwpck_require__(434);
-const core = __nccwpck_require__(8654);
-const sqlite3 = __nccwpck_require__(8312);
-
-class Grype{
-  static database;
-
-  static getCVE(ID){
-    const query = {
-      result:[],
-    };
-    
-    const qDefault = Grype.database.prepare(`SELECT DISTINCT cvss FROM vulnerability_metadata WHERE data_source = 'https://nvd.nist.gov/vuln/detail/${ID}' AND json_extract(cvss, '$[0]') NOT NULL`).all();
-    if(qDefault && Array.isArray(qDefault) && qDefault.length > 0){
-      query.result = qDefault;
-    }else{
-      const qNotNull = Grype.database.prepare(`SELECT DISTINCT cvss FROM vulnerability_metadata WHERE id = '${ID}' AND json_extract(cvss, '$[0]') NOT NULL`).all();
-      if(qNotNull && Array.isArray(qNotNull) && qNotNull.length > 0){
-        query.result = qNotNull;
-      }
-    }
-
-    if(query.result.length > 0){
-      const metadata = JSON.parse(query.result[0].cvss);
-      const tries = [
-        {source:'nist', type:'Primary'},
-        {source:'.+', type:'Secondary'},
-        {source:'.*', type:'.*'},
-      ];
-      for(let i=0; i<tries.length; i++){
-        for(const cvss of metadata){
-          if(/3\.\d+/ig.test(cvss.version) && new RegExp(tries[i].source, 'ig').test(cvss.source) && new RegExp(tries[i].type, 'ig').test(cvss.type)){
-            return({
-              id:ID,
-              severity:cvss.metrics.base_score,
-              risk:cvss.metrics.exploitability_score,
-              vector:cvss.vector,
-            });
-          }
-        }
-      }
-    }
-
-    return({
-      id:ID,
-      severity:0,
-      risk:0,
-      vector:''
-    });
-  }
-
-  static async init(){
-    const files = {
-      db:'vulnerability.db',
-      listing:'grype.listing.json',
-      targz:'grype.db.tar.gz',
-      cache:{
-        src:'/home/runner/.cache/grype/db/5/vulnerability.db'
-      }
-    };
-
-    if(existsSync(files.cache.src)){
-      core.info(`found previous grype database at ${files.cache.src}`);
-      Grype.database = new sqlite3(files.cache.src, {readonly:true});
-    }else if(existsSync(files.db)){
-      core.info(`found existing grype database at ${files.db}`);
-      Grype.database = new sqlite3(files.db, {readonly:true});
-    }
-
-    if(!existsSync(files.db)){
-      core.warning(`could not find any grype database, downloading ...`)
-      try{
-        const response = await fetch('https://toolbox-data.anchore.io/grype/databases/listing.json');
-        if(response.ok && response.body){
-          Readable.fromWeb(response.body).pipe(createWriteStream(files.listing));
-          const listing = JSON.parse(readFileSync(files.listing));
-          
-          const targz = await fetch(listing.available[5].shift().url);
-          if(targz.ok && targz.body){
-            Readable.fromWeb(targz.body).pipe(createWriteStream(files.targz));
-            tar.extract({
-              file:createReadStream(files.targz).path,
-              sync:true
-            });
-            core.info(`successfully downloaded ${files.db}`);
-            Grype.database = new sqlite3(files.db, {readonly:true});
-          }
-        }
-      }catch(e){
-        core.warning(e);
-      }
-    }
-  }
-}
-
-module.exports = Grype;
-
-/***/ }),
-
 /***/ 1504:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -26884,16 +26715,713 @@ module.exports = {
 
 /***/ }),
 
-/***/ 9095:
+/***/ 2242:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const { spawn } = __nccwpck_require__(1421);
+const os = __nccwpck_require__(857);
+const { inspect } = __nccwpck_require__(7975);
 const core = __nccwpck_require__(8654);
+
+class Eleven{
+  static arguments = [];
+
+  static #debug = false;
+  static #config = {
+    verbose:false,
+  };
+
+  static set(x, v){
+    Eleven.#config[x] = v;
+    Eleven.debug(`Eleven.set(${x}, ${v})`);
+  }
+
+  static get(x){
+    return(Eleven.#config[x]);
+  }
+
+  static environment(e){
+    switch(true){
+      case /development|dev/ig.test(e):
+        Eleven.#debug = true;
+        break;
+    }
+  }
+
+  static debug(){
+    if(Eleven.#debug){
+      core.info.apply(Eleven, [inspect.apply(Eleven, arguments)]);
+    }
+  }
+
+  static info(){
+    core.info.apply(Eleven, arguments);
+  }
+
+  static warning(){
+    core.warning.apply(Eleven, arguments);
+  }
+
+  static error(){
+    core.error.apply(Eleven, arguments);
+  }
+
+  static notice(){
+    core.notice.apply(Eleven, arguments);
+  }
+
+  static ref(){
+    if(!global.Eleven){
+      Eleven.arguments = process.argv.slice(2);
+      if(Array.isArray(Eleven.arguments) && Eleven.arguments.length > 0 && String(Eleven.arguments[0]).toLowerCase() === 'development'){
+        Eleven.#debug = true;
+      }
+      global.Eleven = Eleven;
+    }
+    return(global.Eleven);
+  }
+}
+
+module.exports = Eleven.ref();
+
+/***/ }),
+
+/***/ 1388:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const Eleven = __nccwpck_require__(2242);
+const { existsSync, createWriteStream, readFileSync, createReadStream } = __nccwpck_require__(3024);
+const { Readable } = __nccwpck_require__(7075);
+const tar = __nccwpck_require__(434);
+const sqlite3 = __nccwpck_require__(8312);
+
+
+class Grype{
+  static database;
+  static cutoff = 7;
+
+  static getCVE(ID){
+    const query = {
+      rows:[],
+    };
+    
+    const qDefault = Grype.database.prepare(`SELECT DISTINCT cvss FROM vulnerability_metadata WHERE data_source = 'https://nvd.nist.gov/vuln/detail/${ID}' AND json_extract(cvss, '$[0]') NOT NULL`).all();
+    if(qDefault && Array.isArray(qDefault) && qDefault.length > 0){
+      query.rows = qDefault;
+    }else{
+      const qNotNull = Grype.database.prepare(`SELECT DISTINCT cvss FROM vulnerability_metadata WHERE id = '${ID}' AND json_extract(cvss, '$[0]') NOT NULL`).all();
+      if(qNotNull && Array.isArray(qNotNull) && qNotNull.length > 0){
+        query.rows = qNotNull;
+      }
+    }
+
+    if(query.rows.length > 0){
+      for(const row of query.rows){
+        const metadata = JSON.parse(row.cvss);
+        const tries = [
+          {source:'nist', type:'Primary'},
+          {source:'.+', type:'Secondary'},
+          {source:'.*', type:'.*'},
+        ];
+        for(let i=0; i<tries.length; i++){
+          for(const cvss of metadata){
+            if(/3\.\d+/ig.test(cvss.version) && new RegExp(tries[i].source, 'ig').test(cvss.source) && new RegExp(tries[i].type, 'ig').test(cvss.type)){
+              return({
+                id:ID,
+                severity:cvss.metrics.base_score,
+                risk:cvss.metrics.exploitability_score,
+                vector:cvss.vector,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    return({
+      id:ID,
+      severity:0,
+      risk:0,
+      vector:''
+    });
+  }
+
+  static async init(){
+    const files = {
+      db:'vulnerability.db',
+      listing:'grype.listing.json',
+      targz:'grype.db.tar.gz',
+      cache:{
+        src:'/home/runner/.cache/grype/db/5/vulnerability.db'
+      }
+    };
+
+    if(existsSync(files.cache.src)){
+      Eleven.info(`found previous grype database at ${files.cache.src}`);
+      Grype.database = new sqlite3(files.cache.src, {readonly:true});
+    }else if(existsSync(files.db)){
+      Eleven.info(`found existing grype database at ${files.db}`);
+      Grype.database = new sqlite3(files.db, {readonly:true});
+    }
+
+    if(!existsSync(files.db)){
+      Eleven.warning(`could not find any grype database, downloading ...`)
+      try{
+        const response = await fetch('https://toolbox-data.anchore.io/grype/databases/listing.json');
+        if(response.ok && response.body){
+          Readable.fromWeb(response.body).pipe(createWriteStream(files.listing));
+          const listing = JSON.parse(readFileSync(files.listing));
+          
+          const targz = await fetch(listing.available[5].shift().url);
+          if(targz.ok && targz.body){
+            Readable.fromWeb(targz.body).pipe(createWriteStream(files.targz));
+            tar.extract({
+              file:createReadStream(files.targz).path,
+              sync:true
+            });
+            Eleven.info(`successfully downloaded ${files.db}`);
+            Grype.database = new sqlite3(files.db, {readonly:true});
+          }
+        }
+      }catch(e){
+        Eleven.warning(e);
+      }
+    }
+  }
+
+  static ref(){
+    if(!global.Grype){
+      global.Grype = Grype;
+    }
+    return(global.Grype);
+  }
+}
+
+module.exports = Grype.ref();
+
+/***/ }),
+
+/***/ 9138:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const Eleven = __nccwpck_require__(2242);
+const { resolve } = __nccwpck_require__(6760);
+const { existsSync, readFileSync } = __nccwpck_require__(3024);
+const run = __nccwpck_require__(7538);
+
+module.exports = class Inputs{
+  static async sarif_file(file){
+    // will return all valid CVE IDs if any are present
+    Eleven.debug(`sarif_file(${file})`);
+
+    const CVEs = [];
+
+    if(existsSync(resolve(file))){
+      try{
+        const sarif = JSON.parse(readFileSync(file, 'utf-8'));
+        try{
+          if(/grype/i.test(sarif.runs[0]?.tool?.driver?.name)){
+            for(const rules of sarif.runs[0].tool.driver?.rules){
+              const match = rules.id.match(/(CVE-\d+-\d+)/i);
+              if(match && Array.isArray(match) && match.length > 0){
+                if(!CVEs.includes(match[1])){
+                  CVEs.push(match[1]);
+                }
+              }else{
+                Eleven.warning(`sarif_file rule ${rules.id} is not a valid CVE ID!`);
+              }
+            }
+          }else{
+            Eleven.warning(`sarif_file ${file} is not a grype report!`);
+          }
+        }catch(e){
+          Eleven.warning(`sarif_file ${file} is not a grype report! Exception ${e.toString()}`);
+        }
+      }catch(e){
+        Eleven.warning(`sarif_file ${file} not a valid JSON file! Exception ${e.toString()}`);
+      }
+    }else{
+      Eleven.warning(`sarif_file ${file} not found!`);
+    }
+    return(CVEs);
+  }
+
+  static async build_output_metadata(metadata){
+    // will return the buildx log if present
+    Eleven.debug(`build_output_metadata(${metadata})`);
+
+    let log = '';
+    if(null === metadata){
+      log = readFileSync('./buildx.log').toString();
+    }else{
+      try{
+        const json = JSON.parse(metadata);
+        try{
+          const id = json?.["buildx.build.ref"].split('/').pop();
+          try{
+            log = await run('docker', ['buildx', 'history', 'logs', id]);
+          }catch(e){
+            Eleven.warning(`build_output_metadata could not call buildx history logs. Received error: ${e.toString()}`);
+          }
+        }catch(e){
+          Eleven.warning(`build_output_metadata buildx.build.ref is not set!`);
+        }
+      }catch(e){
+        Eleven.warning(`build_output_metadata is not a valid JSON object!`);
+      }
+    }
+
+    if(log.length > 0){
+      Eleven.debug(`buildx log has ${[...log].reduce((a, c) => a + (c === '\n' ? 1 : 0), 0)} lines`);
+    }
+    return(log);
+  }
+}
+
+/***/ }),
+
+/***/ 569:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const Eleven = __nccwpck_require__(2242);
+const Grype = __nccwpck_require__(1388);
+const Inputs = __nccwpck_require__(9138);
+const markdownCVE = __nccwpck_require__(8859);
+
+const core = __nccwpck_require__(8654);
+const { readdirSync, readFileSync, writeFileSync, existsSync } = __nccwpck_require__(3024);
+
+module.exports = class README{
+  #inputs = {};
+  #files = {
+    workflows:{
+      tags:'',
+    },
+    dockerfile:'',
+    build:'',
+    readme:'',
+    compose:'',
+  };
+  #env = {};
+  #json = {};
+  #header = [];
+  #footer = [];
+
+  constructor(){
+
+  }
+
+  async init(){
+
+    if(core.getInput('development')){
+      Eleven.environment('development');
+    }
+
+    const inputs = {
+      sarif_file:{value:'', debug:'report.sarif'},
+      build_output_metadata:{value:'{}', debug:null},
+    };
+
+    for(const input in inputs){
+      if(core.getInput(input) || Eleven.debug){
+        if(typeof(Inputs[input]) === 'function'){
+          if(Eleven.debug){
+            inputs[input].value = inputs[input].debug;
+          }else{
+            inputs[input].value = core.getInput(input);
+          }
+          this.#inputs[input] = await Inputs[input].apply(this, [inputs[input].value]);
+        }else{
+          Eleven.warning(`input ${input} is not a valid function!`);
+        }
+      }else{
+        Eleven.warning(`input ${input} is not set!`);
+      }
+    }
+
+    await Grype.init();
+    this.#loadImageFiles();
+    this.#setupEnvironment();
+    this.#create();
+  }
+
+  #loadImageFiles(){
+    readdirSync('./').forEach(file => {
+      switch(true){
+        case /^\.json/i.test(file):
+          this.#json = JSON.parse(readFileSync(file).toString());
+          this.#jsonToTemplateVariable(this.#json, 'json_');
+          break;
+
+        case /arch\.dockerfile/i.test(file):
+          this.#files.dockerfile = readFileSync(file).toString();
+          break;
+
+        case /build\.dockerfile/i.test(file):
+          this.#files.build = readFileSync(file).toString();
+          break;
+
+        case /project\.md/i.test(file):
+          this.#files.readme = readFileSync(file).toString();
+          break;
+
+        case /compose\.yaml|compose\.yml/i.test(file):
+          this.#files.compose = readFileSync(file).toString();
+          break;
+
+        case /\.github/i.test(file):
+          if(existsSync('./.github/workflows/tags.yml')){
+            this.#files.workflows.tags = readFileSync('./.github/workflows/tags.yml').toString();
+          }
+          break;
+      }
+    });
+  }
+
+  #setupEnvironment(){
+
+    if(this.#json?.readme?.grype?.severity > 0){
+      Grype.cutoff = this.#json.readme.grype.severity;
+      Eleven.debug(`set grype markdown cutoff to ${Grype.cutoff}`);
+    }
+    
+    if(this.#inputs.sarif_file && this.#inputs.sarif_file.length > 0){
+      Eleven.debug(`create markdownCVE for sarif_file with ${this.#inputs.sarif_file.length} CVEs`);
+      const report = new markdownCVE({
+        title:etc.title.sarif,
+        CVEs:this.#inputs.sarif_file,
+      });
+      etc.content.sarif = report.create();
+    }
+
+    if(this.#inputs.build_output_metadata && this.#inputs.build_output_metadata.length > 0){
+      const CVEs = [];
+      const matches = [...this.#inputs.build_output_metadata.matchAll(/"type":"FIX","msg":"CVE\|(\S+)\|(\S+)"/ig)];
+      for(const match of matches){
+        if(/amd64/ig.test(match[2])){
+          if(!CVEs.includes(match[1])){
+            CVEs.push(match[1]);
+          }
+        }
+      }
+
+      Eleven.debug(`create markdownCVE for build_output_metadata with ${CVEs.length} CVEs`);
+      const report = new markdownCVE({
+        title:etc.title.patches,
+        text:etc.text.patches,
+        CVEs:CVEs,
+      });
+
+      etc.content.patches = report.create();
+    }
+
+    this.#tags();
+
+    // check for compose example
+    if(this.#files.compose.length > 0){
+      etc.content.compose = `${etc.title.compose}\r\n${"```"}yaml\r\n${this.#files.compose}\r\n${"```"}`;
+    }
+
+    // check for build example
+    if(this.#files.build.length > 0){
+      etc.content.build = `${etc.title.build}\r\n${"```"}yaml\r\n${this.#files.build}\r\n${"```"}`;
+    }
+
+    // check for parent image
+    this.#env['distro_icon'] = '⛰️ ';
+    switch(true){
+      case /scratch/i.test(this.#json?.readme?.parent?.image): this.#env['distro_icon'] = ''; this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/scratch'; break;
+      case /11notes\/alpine\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/r/11notes/alpine'; break;
+      case /11notes\/kms\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/r/11notes/kms'; break;
+      case /ubuntu\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['distro_icon'] = '🍟 '; this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/ubuntu'; break;
+    }
+
+    // check for built
+    const built = [];
+    for(const k in this.#json?.readme?.built){
+      built.push(`* [${k}](${this.#json.readme.built[k]})`);
+    }
+    if(built.length > 0){
+      etc.content.built = `${etc.title.built}\r\n${built.join("\r\n")}`;
+    }
+
+    // finalize env
+    this.#jsonToTemplateVariable(etc);
+
+    // setup readme
+    this.#header = [
+      '![banner](https://github.com/11notes/defaults/blob/main/static/img/banner.png?raw=true)',
+      `# \${{ distro_icon }}\${{ json_name }}\r\n${etc.content.shields}`,
+      this.#json.readme.description,
+      etc.content.tags,
+    ];
+
+    this.#footer = [
+      etc.content.patches,
+      etc.content.sarif,
+      `# ElevenNotes™️\r\nThis image is provided to you at your own risk. Always make backups before updating an image to a different version. Check the [releases](https://github.com/11notes/docker-${this.#json.name}/releases) for breaking changes. If you have any problems with using this image simply raise an [issue](https://github.com/11notes/docker-${this.#json.name}/issues), thanks. If you have a question or inputs please create a new [discussion](https://github.com/11notes/docker-${this.#json.name}/discussions) instead of an issue. You can find all my other repositories on [github](https://github.com/11notes?tab=repositories).`,
+      `*created ${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'})} (CET)*`,
+    ];
+  }
+
+  #tags(){
+    let tags = [];
+    let hasUnraid = false;
+    tags.push(this.#json.semver.version);
+    for(const tag in this.#json.semver){
+      if(tag !== 'version'){
+        switch(true){
+          case /stable/i.test(tag): tags.push('stable'); break;
+          case /latest/i.test(tag): tags.push('latest'); break;
+        }
+      }
+    }
+
+    // check if image supports unraid tags
+    if(/unraid|"uid":"99"/i.test(this.#files.workflows.tags) || /eleven unraid/i.test(this.#files.dockerfile)){
+      hasUnraid = true;
+      const unraid = [];
+      for(const tag of tags){
+        unraid.push(`${tag}-unraid`);
+      }
+      tags = tags.concat(unraid);
+    }
+
+    // create tags content
+    if(tags.length > 0){
+      const list = [];
+      for(const tag of tags){
+        list.push(`* [${tag}](https://hub.docker.com/r/11notes/${this.#json.name}/tags?name=${tag})`);
+      }
+      etc.content.tags = `${etc.title.tags}\r\n${etc.text.tags}\r\n\r\n${list.join("\r\n")}`;
+
+      if(hasUnraid){
+        Eleven.info('add UNRAID to README.md');
+        etc.content.tags += `\r\n\r\n${etc.content.unraid}`;
+      }
+    }
+  }
+
+  #create(){
+    const output = {
+      markdown:'',
+      header:[],
+      footer:[],
+    };
+
+    // header
+    for(const e of this.#header){
+      if(`${e}`.length > 0){
+        output.header.push(e);
+      }
+    }
+    output.markdown += `${output.header.join("\r\n\r\n")}\r\n\r\n`;
+
+    // body
+    output.markdown += this.#files.readme;
+
+    // footer
+    for(const e of this.#footer){
+      if(`${e}`.length > 0){
+        output.footer.push(e);
+      }
+    }
+    output.markdown += `\r\n\r\n${output.footer.join("\r\n\r\n")}`;
+
+    for(const k in this.#env){
+      output.markdown = output.markdown.replace(new RegExp(`\\\${{ ${String(k).toLowerCase()} }}`, 'ig'), this.#env[k]);
+    }
+
+    // include all files
+    const includes = [...output.markdown.matchAll(/\${{ include:\s+(\S+) }}/ig)];
+    for(const file of includes){
+      if(existsSync(file[1])){
+        output.markdown = output.markdown.replace(`\${{ include: ${file[1]} }}`, readFileSync(file[1]).toString());
+      }else{
+        output.markdown = output.markdown.replace(`\${{ include: ${file[1]} }}`,`file ${file[1]} not found!`);
+      }
+    }
+
+    // add images
+    const images = [...output.markdown.matchAll(/\${{ image:\s+(\S+) }}/ig)];
+    for(const file of images){
+      if(existsSync(`./img/${file[1]}`)){
+        output.markdown = output.markdown.replace(`\${{ image: ${file[1]} }}`, `![${file[1].split('.')[0].toUpperCase()}](https://github.com/11notes/docker-${this.#json.name}/blob/master/img/${file[1]}?raw=true)`);
+      }else{
+        output.markdown = output.markdown.replace(`\${{ image: ${file[1]} }}`,`image ${file[1]} not found!`);
+      }
+    }
+
+    for(const k in this.#env){
+      output.markdown = output.markdown.replace(new RegExp(`\\\${{ ${String(k).toLowerCase()} }}`, 'ig'), this.#env[k]);
+    }
+
+    // write file
+    if(!Eleven.debug){
+      Eleven.info('writing updated README.md');
+      writeFileSync('./README.md', output.markdown);
+    }else{
+      Eleven.debug('writing updated debug TREADME.md');
+      writeFileSync('./TREADME.md', output.markdown);
+    }
+  }
+
+
+  // helper functions
+  #jsonToTemplateVariable(json, prefix = ''){
+    for(const k in json){
+      if(typeof(json[k]) === 'object'){
+        this.#jsonToTemplateVariable(json[k], `${prefix}${k}_`);
+      }else{
+        this.#env[`${prefix}${k.toLowerCase()}`] = json[k];
+      }
+    }
+  }
+}
+
+const etc = {
+  title:{
+    synopsis:'# SYNOPSIS 📖',
+    volumes:'# VOLUMES 📁',
+    built:'# BUILT WITH 🧰',
+    build:'# BUILD 🚧',
+    unraid:'# UNRAID VERSION 🟠',
+    compose:'# COMPOSE ✂️',
+    tips:'# GENERAL TIPS 📌',
+    environment:'# ENVIRONMENT 📝',
+    source:'# SOURCE 💾',
+    parent:'# PARENT IMAGE 🏛️',
+    config:'# DEFAULT CONFIG 📑',
+    patches:'# PATCHED CVE 🦟',
+    tags:'# MAIN TAGS 🏷️',
+    defaults:'# DEFAULT SETTINGS 🗃️',
+    sarif:'# SECURITY VULNERABILITIES REPORT ⚡',
+  },
+  
+  content:{
+    shields:`${[
+      '[<img src="https://img.shields.io/badge/github-source-blue?logo=github&color=040308">](https://github.com/11notes/docker-${{ json_name }})',
+      '![size](https://img.shields.io/docker/image-size/${{ json_image }}/${{ json_semver_version }}?color=0eb305)',
+      '![version](https://img.shields.io/docker/v/${{ json_image }}/${{ json_semver_version }}?color=eb7a09)',
+      '![pulls](https://img.shields.io/docker/pulls/${{ json_image }}?color=2b75d6)',
+      '[<img src="https://img.shields.io/github/issues/11notes/docker-${{ json_name }}?color=7842f5">](https://github.com/11notes/docker-${{ json_name }}/issues)',
+    ].join("")}`,
+    tips:`\${{ title_tips }}\r\n${[
+      '* Use a reverse proxy like Traefik, Nginx, HAproxy to terminate TLS and to protect your endpoints',
+      '* Use Let’s Encrypt DNS-01 challenge to obtain valid SSL certificates for your services'
+    ].join("\r\n")}`,
+    unraid:"${{ title_unraid }}\r\nThis image supports unraid by default. Simply add **-unraid** to any tag and the image will run as 99:100 instead of 1000:1000 causing no issues on unraid. Enjoy.",
+    build:"${{ title_build }}\r\n```dockerfile\r\n${{ include: ./build.dockerfile }}\r\n```",
+    tags:'',
+    synopsis:'\${{ title_synopsis }}\r\n**What can I do with this?**',
+    environment:`\${{ title_environment }}\r\n${[
+      '| Parameter | Value | Default |',
+      '| --- | --- | --- |',
+      '| `TZ` | [Time Zone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) | |',
+      '| `DEBUG` | Will activate debug option for container image and app (if available) | |',
+    ].join("\r\n")}`,
+    defaults:`\${{ title_defaults }}\r\n${[
+      '| Parameter | Value | Description |',
+      '| --- | --- | --- |',
+      '| `user` | docker | user name |',
+      '| `uid` | 1000 | [user identifier](https://en.wikipedia.org/wiki/User_identifier) |',
+      '| `gid` | 1000 | [group identifier](https://en.wikipedia.org/wiki/Group_identifier) |',
+      '| `home` | ${{ json_root }} | home directory of user docker |',
+    ].join("\r\n")}`,
+    parent:"${{ title_parent }}\r\n* [${{ json_readme_parent_image }}](${{ json_readme_parent_url }})",
+    source:"${{ title_source }}\r\n* [${{ json_image }}](https://github.com/11notes/docker-${{ json_name }})",
+    sarif:'',
+    patches:'',
+  },
+  text:{
+    tags:'These are the main tags for the image. There is also a tag for each commit and its shorthand sha256 value.',
+    patches:"Unlike other popular image providers, this image contains individual CVE fixes to create a clean container image even if the developers of the original app simply forgot or refuse to do that. Why not add a PR with these fixes? Well, many developers ignore PR for CVE fixes and don’t run any code security scanners against their repos. Some simply don’t care.\r\n\r\n",
+  }
+};
+
+/***/ }),
+
+/***/ 8859:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const Eleven = __nccwpck_require__(2242);
+const Grype = __nccwpck_require__(1388);
+
+module.exports = class markdownCVE{
+  #CVEs = {};
+  #markdown = [];
+
+  constructor(opt){
+    if(opt?.title){
+      this.#markdown.push(opt.title);
+    }
+    if(opt?.text){
+      this.#markdown.push(opt.text);
+    }
+    if(opt?.CVEs){
+      for(const CVE of opt.CVEs){
+        this.add(CVE);
+      }
+    }
+    this.#markdown.push('| ID | Severity | Risk | Vector | Source |');
+    this.#markdown.push('| --- | --- | --- | --- | --- |');
+  }
+
+  add(ID){
+    if(!this.#CVEs[ID]){
+      this.#CVEs[ID] = true;
+    }
+  }
+
+  create(){
+    const CVEs = [];
+    for(const ID in this.#CVEs){
+      const update = Grype.getCVE(ID);
+      if(update && update.vector.length > 0){
+        if(update.severity >= Grype.cutoff){
+          CVEs.push(update);
+        }else{
+          Eleven.debug(`skipping ${ID} due to severity cutoff (${update.severity} < ${Grype.cutoff})`)
+        }
+      }else{
+        Eleven.warning(`could not parse ${ID}, no proper result from grype database`);
+      }
+    }
+
+    if(CVEs.length > 0){
+      CVEs.sort((a, b) => {return(b.severity - a.severity)});
+      for(const CVE of CVEs){
+        this.#markdown.push(`| ${CVE.id} | ${this.#scoreToText(CVE.severity)} | ${this.#scoreToText(CVE.risk)} | [${CVE.vector}](https://www.first.org/cvss/calculator/3.1#${CVE.vector}) | [${CVE.id}](https://nvd.nist.gov/vuln/detail/${CVE.id}) |`);
+      }
+      return(this.#markdown.join("\r\n"));
+    }else{
+      Eleven.warning(`could not create report for ${this.#markdown[0]}`);
+      return('');
+    }
+  }
+
+  #scoreToText(severity){
+    switch(true){
+      case severity <= 0: return('none');
+      case severity > 0 && severity <= 3.9: return('low');
+      case severity >= 4 && severity <= 6.9: return('medium');
+      case severity >= 7 && severity <= 8.9: return('high');
+      case severity >= 9: return('critical');
+    }
+  }
+}
+
+/***/ }),
+
+/***/ 7538:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const Eleven = __nccwpck_require__(2242);
+const { spawn } = __nccwpck_require__(1421);
 
 module.exports = run = async(bin, args) => {
   return(new Promise((resolve, reject) => {
     const param = (Array.isArray(args) ? args : args.split(' '));
-    core.info(`run ${bin} ${param.join(' ')}`);
+    Eleven.debug(`run ${bin} ${param.join(' ')}`);
     const ps = spawn(bin, param, {shell:true, stdio:['pipe', 'pipe', 'pipe']});
     const io = {stdout:'', stderr:''};
     ps.stderr.on('data', data => {io.stderr += data.toString()});
@@ -36297,389 +36825,9 @@ exports.Node = Node;
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-const args = process.argv.slice(2);
-
-const fs = __nccwpck_require__(3024);
-const { inspect } = __nccwpck_require__(7975);
-const { resolve } = __nccwpck_require__(6760);
-const core = __nccwpck_require__(8654);
-
-const Grype = __nccwpck_require__(9097);
-const { Report } = __nccwpck_require__(1330);
-const index_run = __nccwpck_require__(9095);
-
-process
-  .on('unhandledRejection', (e, p) => {
-    core.error(e.toString());
-  })
-  .on('uncaughtException', e => {
-    core.error(e.toString());
-  });
-
-class README{
-  #debug = false;
-  #env = {};
-  #header = [];
-  #footer = [];
-
-  #default = {
-    title:{
-      synopsis:'# SYNOPSIS 📖',
-      volumes:'# VOLUMES 📁',
-      built:'# BUILT WITH 🧰',
-      build:'# BUILD 🚧',
-      unraid:'# UNRAID VERSION 🟠',
-      compose:'# COMPOSE ✂️',
-      tips:'# GENERAL TIPS 📌',
-      environment:'# ENVIRONMENT 📝',
-      source:'# SOURCE 💾',
-      parent:'# PARENT IMAGE 🏛️',
-      config:'# DEFAULT CONFIG 📑',
-      patches:'# PATCHED CVE 🦟',
-      tags:'# MAIN TAGS 🏷️',
-      defaults:'# DEFAULT SETTINGS 🗃️',
-      sarif:'# SECURITY VULNERABILITIES REPORT ⚡',
-    },
-    content:{
-      shields:`${[
-        '[<img src="https://img.shields.io/badge/github-source-blue?logo=github&color=040308">](https://github.com/11notes/docker-${{ json_name }})',
-        '![size](https://img.shields.io/docker/image-size/${{ json_image }}/${{ json_semver_version }}?color=0eb305)',
-        '![version](https://img.shields.io/docker/v/${{ json_image }}/${{ json_semver_version }}?color=eb7a09)',
-        '![pulls](https://img.shields.io/docker/pulls/${{ json_image }}?color=2b75d6)',
-        '[<img src="https://img.shields.io/github/issues/11notes/docker-${{ json_name }}?color=7842f5">](https://github.com/11notes/docker-${{ json_name }}/issues)',
-      ].join("")}`,
-      tips:`\${{ title_tips }}\r\n${[
-        '* Use a reverse proxy like Traefik, Nginx, HAproxy to terminate TLS and to protect your endpoints',
-        '* Use Let’s Encrypt DNS-01 challenge to obtain valid SSL certificates for your services'
-      ].join("\r\n")}`,
-      unraid:"${{ title_unraid }}\r\nThis image supports unraid by default. Simply add **-unraid** to any tag and the image will run as 99:100 instead of 1000:1000 causing no issues on unraid. Enjoy.",
-      build:"${{ title_build }}\r\n```dockerfile\r\n${{ include: ./build.dockerfile }}\r\n```",
-      tags:'',
-      synopsis:'\${{ title_synopsis }}\r\n**What can I do with this?**',
-      environment:`\${{ title_environment }}\r\n${[
-        '| Parameter | Value | Default |',
-        '| --- | --- | --- |',
-        '| `TZ` | [Time Zone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) | |',
-        '| `DEBUG` | Will activate debug option for container image and app (if available) | |',
-      ].join("\r\n")}`,
-      defaults:`\${{ title_defaults }}\r\n${[
-        '| Parameter | Value | Description |',
-        '| --- | --- | --- |',
-        '| `user` | docker | user name |',
-        '| `uid` | 1000 | [user identifier](https://en.wikipedia.org/wiki/User_identifier) |',
-        '| `gid` | 1000 | [group identifier](https://en.wikipedia.org/wiki/Group_identifier) |',
-        '| `home` | ${{ json_root }} | home directory of user docker |',
-      ].join("\r\n")}`,
-      parent:"${{ title_parent }}\r\n* [${{ json_readme_parent_image }}](${{ json_readme_parent_url }})",
-      source:"${{ title_source }}\r\n* [${{ json_image }}](https://github.com/11notes/docker-${{ json_name }})",
-      sarif:'',
-      patches:'',
-    },
-    text:{
-      tags:'These are the main tags for the image. There is also a tag for each commit and its shorthand sha256 value.',
-      patches:"Unlike other popular image providers, this image contains individual CVE fixes to create a clean container image even if the developers of the original app simply forgot or refuse to do that. Why not add a PR with these fixes? Well, many developers ignore PR for CVE fixes and don’t run any code security scanners against their repos. Some simply don’t care.\r\n\r\n",
-    }
-  };
-
-  #json = {};
-
-  #files = {
-    workflows:{
-      tags:'',
-    },
-    dockerfile:'',
-    build:'',
-    readme:'',
-    compose:'',
-  };
-
-  constructor(opt = {}){
-    this.#loadFiles(); // load all files
-    (async() =>{
-      this.#debug = opt?.debug || false;
-      await this.#parseInputs(opt);
-      this.#createVariables();
-
-      this.#header = [
-        '![banner](https://github.com/11notes/defaults/blob/main/static/img/banner.png?raw=true)',
-        `# \${{ distro_icon }}\${{ json_name }}\r\n${this.#default.content.shields}`,
-        this.#json.readme.description,
-        this.#default.content.tags,
-      ];
-
-      this.#footer = [
-        this.#default.content.patches,
-        this.#default.content.sarif,
-        `# ElevenNotes™️\r\nThis image is provided to you at your own risk. Always make backups before updating an image to a different version. Check the [releases](https://github.com/11notes/docker-${this.#json.name}/releases) for breaking changes. If you have any problems with using this image simply raise an [issue](https://github.com/11notes/docker-${this.#json.name}/issues), thanks. If you have a question or inputs please create a new [discussion](https://github.com/11notes/docker-${this.#json.name}/discussions) instead of an issue. You can find all my other repositories on [github](https://github.com/11notes?tab=repositories).`,
-        `*created ${new Date().toLocaleString('de-CH', { timeZone:'Europe/Zurich'})} (CET)*`,
-      ];
-
-      this.#create();
-    })();
-  }
-
-  #loadFiles(){
-    fs.readdirSync('./').forEach(file => {
-      switch(true){
-        case /^\.json/i.test(file): this.#json = JSON.parse(fs.readFileSync(file).toString()); this.#jsonToTemplateVariable(this.#json, 'json_'); break;
-        case /arch\.dockerfile/i.test(file): this.#files.dockerfile = fs.readFileSync(file).toString(); break;
-        case /build\.dockerfile/i.test(file): this.#files.build = fs.readFileSync(file).toString(); break;
-        case /project\.md/i.test(file): this.#files.readme = fs.readFileSync(file).toString(); break;
-        case /compose\.yaml|compose\.yml/i.test(file): this.#files.compose = fs.readFileSync(file).toString(); break;
-        case /\.github/i.test(file):
-          if(fs.existsSync('./.github/workflows/tags.yml')){
-            this.#files.workflows.tags = fs.readFileSync('./.github/workflows/tags.yml').toString();
-          }
-        break;
-      }
-    });
-  }
-
-  async #parseInputs(opt){
-    if(opt.sarif?.runs && Array.isArray(opt.sarif.runs) && opt.sarif.runs.length > 0){
-      if(/grype/i.test(opt.sarif.runs[0]?.tool?.driver?.name)){
-        const report = new Report({
-          title:this.#default.title.sarif,
-        });
-
-        for(const rules of opt.sarif.runs[0].tool.driver?.rules){
-          const severity = parseFloat(rules?.properties?.['security-severity']);
-          const match = rules.id.match(/(CVE-\d+-\d+)/i);
-          rules.id = match[1];
-          if(severity >= (this.#json?.readme?.grype?.severity || 7)){
-            report.add(rules.id);
-          }
-        }
-
-        this.#default.content.sarif = await report.create();
-      }else{
-        core.warning('sarif is not a valid grype report');
-      }
-    }else{
-      core.warning('sarif runs is empty');
-    }
-
-    if(opt.build_log.length > 0){
-      // find CVE fixed that were applied during build
-      const report = new Report({
-        title:this.#default.title.patches,
-        text:this.#default.text.patches,
-      });
-      
-      const matches = [...opt.build_log.toString().matchAll(/"type":"FIX","msg":"CVE\|(\S+)\|(\S+)"/ig)];
-      for(const match of matches){
-        if(/amd64/ig.test(match[2])){
-          report.add(match[1]);
-        }
-      }
-
-      this.#default.content.patches = await report.create();
-    }else{
-      core.warning('build log is empty');
-    }
-  }
-
-  #createVariables(){
-    this.#createTags();
-
-    // check for compose example
-    if(this.#files.compose.length > 0){
-      this.#default.content.compose = `${this.#default.title.compose}\r\n${"```"}yaml\r\n${this.#files.compose}\r\n${"```"}`;
-    }
-
-    // check for build example
-    if(this.#files.build.length > 0){
-      this.#default.content.build = `${this.#default.title.build}\r\n${"```"}yaml\r\n${this.#files.build}\r\n${"```"}`;
-    }
-
-    // check for parent image
-    this.#env['distro_icon'] = '⛰️ ';
-    switch(true){
-      case /scratch/i.test(this.#json?.readme?.parent?.image): this.#env['distro_icon'] = ''; this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/scratch'; break;
-      case /11notes\/alpine\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/r/11notes/alpine'; break;
-      case /11notes\/kms\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/r/11notes/kms'; break;
-      case /ubuntu\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['distro_icon'] = '🍟 '; this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/ubuntu'; break;
-    }
-
-    // check for built
-    const built = [];
-    for(const k in this.#json?.readme?.built){
-      built.push(`* [${k}](${this.#json.readme.built[k]})`);
-    }
-    if(built.length > 0){
-      this.#default.content.built = `${this.#default.title.built}\r\n${built.join("\r\n")}`;
-    }
-
-    // finalize
-    this.#jsonToTemplateVariable(this.#default);
-  }
-
-  #jsonToTemplateVariable(json, prefix = ''){
-    for(const k in json){
-      if(typeof(json[k]) === 'object'){
-        this.#jsonToTemplateVariable(json[k], `${prefix}${k}_`);
-      }else{
-        this.#env[`${prefix}${k.toLowerCase()}`] = json[k];
-      }
-    }
-  }
-
-  #createTags(){
-    let tags = [];
-    let hasUnraid = false;
-    tags.push(this.#json.semver.version);
-    for(const tag in this.#json.semver){
-      if(tag !== 'version'){
-        switch(true){
-          case /stable/i.test(tag): tags.push('stable'); break;
-          case /latest/i.test(tag): tags.push('latest'); break;
-        }
-      }
-    }
-
-    // check if image supports unraid tags
-    if(/unraid|"uid":"99"/i.test(this.#files.workflows.tags) || /eleven unraid/i.test(this.#files.dockerfile)){
-      hasUnraid = true;
-      const unraid = [];
-      for(const tag of tags){
-        unraid.push(`${tag}-unraid`);
-      }
-      tags = tags.concat(unraid);
-    }
-
-    // create tags content
-    if(tags.length > 0){
-      const list = [];
-      for(const tag of tags){
-        list.push(`* [${tag}](https://hub.docker.com/r/11notes/${this.#json.name}/tags?name=${tag})`);
-      }
-      this.#default.content.tags = `${this.#default.title.tags}\r\n${this.#default.text.tags}\r\n\r\n${list.join("\r\n")}`;
-
-      if(hasUnraid){
-        core.info('add UNRAID to README.md');
-        this.#default.content.tags += `\r\n\r\n${this.#default.content.unraid}`;
-      }
-    }
-  }
-
-  #create(){
-    const output = {
-      markdown:'',
-      header:[],
-      footer:[],
-    };
-
-    // header
-    for(const e of this.#header){
-      if(`${e}`.length > 0){
-        output.header.push(e);
-      }
-    }
-    output.markdown += `${output.header.join("\r\n\r\n")}\r\n\r\n`;
-
-    // body
-    output.markdown += this.#files.readme;
-
-    // footer
-    for(const e of this.#footer){
-      if(`${e}`.length > 0){
-        output.footer.push(e);
-      }
-    }
-    output.markdown += `\r\n\r\n${output.footer.join("\r\n\r\n")}`;
-
-    for(const k in this.#env){
-      output.markdown = output.markdown.replace(new RegExp(`\\\${{ ${String(k).toLowerCase()} }}`, 'ig'), this.#env[k]);
-    }
-
-    // include all files
-    const includes = [...output.markdown.matchAll(/\${{ include:\s+(\S+) }}/ig)];
-    for(const file of includes){
-      if(fs.existsSync(file[1])){
-        output.markdown = output.markdown.replace(`\${{ include: ${file[1]} }}`, fs.readFileSync(file[1]).toString());
-      }else{
-        output.markdown = output.markdown.replace(`\${{ include: ${file[1]} }}`,`file ${file[1]} not found!`);
-      }
-    }
-
-    // add images
-    const images = [...output.markdown.matchAll(/\${{ image:\s+(\S+) }}/ig)];
-    for(const file of images){
-      if(fs.existsSync(`./img/${file[1]}`)){
-        output.markdown = output.markdown.replace(`\${{ image: ${file[1]} }}`, `![${file[1].split('.')[0].toUpperCase()}](https://github.com/11notes/docker-${this.#json.name}/blob/master/img/${file[1]}?raw=true)`);
-      }else{
-        output.markdown = output.markdown.replace(`\${{ image: ${file[1]} }}`,`image ${file[1]} not found!`);
-      }
-    }
-
-    for(const k in this.#env){
-      output.markdown = output.markdown.replace(new RegExp(`\\\${{ ${String(k).toLowerCase()} }}`, 'ig'), this.#env[k]);
-    }
-
-    // write file
-    if(!this.#debug){
-      core.info('writing updated README.md');
-      fs.writeFileSync('./README.md', output.markdown);
-    }else{
-      fs.writeFileSync('./TREADME.md', output.markdown);
-    }
-  }
-}
-
-try{
-  if(args.length && args[0] === 'debug'){
-    (async()=>{
-      await Grype.init(); 
-
-      const readme = new README({
-        sarif:JSON.parse(fs.readFileSync('report.sarif', 'utf-8')),
-        build_log:fs.readFileSync('buildx.log', 'utf-8').toString(),
-        debug:true,
-      });
-    })();
-  }else{
-    (async()=>{
-      try{
-        await Grype.init(); 
-
-        const opt = {
-          sarif:{},
-          build_log:'',
-        };
-
-        // get sarif
-        if(core.getInput('sarif_file')){
-          const sarifPath = resolve(core.getInput('sarif_file'));
-          if(fs.existsSync(sarifPath)){
-            opt.sarif = JSON.parse(fs.readFileSync(sarifPath, 'utf-8'));
-          }else{
-            core.warning(`no sarif file present at ${sarifPath}`);
-          }
-        }else{
-          core.warning('sarif_file not set');
-        }
-
-        // get build history from metadata
-        if(core.getInput('build_output_metadata')){
-          const metadata = JSON.parse(core.getInput('build_output_metadata'));
-          const buildID = metadata?.["buildx.build.ref"].split('/').pop();
-          opt.build_log = await index_run('docker', ['buildx', 'history', 'logs', buildID]);
-          core.info(`opt.build_log has ${[...opt.build_log].reduce((a, c) => a + (c === '\n' ? 1 : 0), 0)} lines`);
-        }else{
-          core.warning('build_output_metadata not set');
-        }
-
-        // start creating README.md
-        const readme = new README(opt);
-      }catch(err){
-        core.warning(inspect(err, {showHidden:false, depth:null}));
-      }
-    })();    
-  }
-}catch(err){
-  core.error(inspect(err, {showHidden:false, depth:null}));
-  core.setFailed(`action failed with error ${err.message}`);
-}
+const README = __nccwpck_require__(569);
+new README()
+  .init();
 module.exports = __webpack_exports__;
 /******/ })()
 ;

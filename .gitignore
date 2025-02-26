@@ -17,3 +17,4 @@ grype.db.tar.gz
 vulnerability.db
 provider-metadata.json
 metadata.json
+better_sqlite3.node
