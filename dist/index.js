@@ -4,7 +4,6 @@
 /***/ 1330:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const { DatabaseSync } = __nccwpck_require__(99);
 const core = __nccwpck_require__(8654);
 const Grype = __nccwpck_require__(9097);
 
@@ -27060,14 +27059,6 @@ module.exports = require("node:fs");
 
 "use strict";
 module.exports = require("node:path");
-
-/***/ }),
-
-/***/ 99:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:sqlite");
 
 /***/ }),
 

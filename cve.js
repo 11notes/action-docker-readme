@@ -1,4 +1,3 @@
-const { DatabaseSync } = require('node:sqlite');
 const core = require('@actions/core');
 const Grype = require('./grype.js');
 
