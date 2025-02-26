@@ -21,6 +21,7 @@
   "dependencies": {
     "@actions/core": "^1.2.6",
     "@actions/github": "^4.0.0",
+    "better-sqlite3": "^11.8.1",
     "tar": "^7.4.3"
   }
 }

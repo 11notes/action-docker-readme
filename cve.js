@@ -17,7 +17,7 @@ class Report{
     this.#markdown.push('| ID | Severity | Risk | Vector | Source |');
     this.#markdown.push('| --- | --- | --- | --- | --- |');
 
-    this.#db = new DatabaseSync('vulnerability.db');
+    this.#db = require('better-sqlite3')('vulnerability.db');    
   }
 
   add(ID){
