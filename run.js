@@ -1,4 +1,5 @@
 const { spawn } = require('node:child_process');
+const core = require('@actions/core');
 
 module.exports = run = async(bin, args) => {
   return(new Promise((resolve, reject) => {

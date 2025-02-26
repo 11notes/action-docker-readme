@@ -75,6 +75,7 @@ module.exports = { Report };
 const { existsSync, createWriteStream, readFileSync, createReadStream, symlinkSync } = __nccwpck_require__(3024);
 const { Readable } = __nccwpck_require__(7075);
 const tar = __nccwpck_require__(434);
+const core = __nccwpck_require__(8654);
 
 class Grype{
   static getCVE(db, ID){
@@ -26883,6 +26884,7 @@ module.exports = {
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const { spawn } = __nccwpck_require__(1421);
+const core = __nccwpck_require__(8654);
 
 module.exports = run = async(bin, args) => {
   return(new Promise((resolve, reject) => {
@@ -36296,7 +36298,7 @@ const args = process.argv.slice(2);
 const fs = __nccwpck_require__(3024);
 const { inspect } = __nccwpck_require__(7975);
 const { resolve } = __nccwpck_require__(6760);
-const index_core = __nccwpck_require__(8654);
+const core = __nccwpck_require__(8654);
 
 const Grype = __nccwpck_require__(9097);
 const { Report } = __nccwpck_require__(1330);
@@ -36439,10 +36441,10 @@ class README{
 
         this.#default.content.sarif = await report.create();
       }else{
-        index_core.warning('sarif is not a valid grype report');
+        core.warning('sarif is not a valid grype report');
       }
     }else{
-      index_core.warning('sarif runs is empty');
+      core.warning('sarif runs is empty');
     }
 
     if(opt.build_log.length > 0){
@@ -36461,7 +36463,7 @@ class README{
 
       this.#default.content.patches = await report.create();
     }else{
-      index_core.warning('build log is empty');
+      core.warning('build log is empty');
     }
   }
 
@@ -36632,37 +36634,37 @@ try{
         };
 
         // get sarif
-        if(index_core.getInput('sarif_file')){
-          const sarifPath = resolve(index_core.getInput('sarif_file'));
+        if(core.getInput('sarif_file')){
+          const sarifPath = resolve(core.getInput('sarif_file'));
           if(fs.existsSync(sarifPath)){
             opt.sarif = JSON.parse(fs.readFileSync(sarifPath, 'utf-8'));
           }else{
-            index_core.warning(`no sarif file present at ${sarifPath}`);
+            core.warning(`no sarif file present at ${sarifPath}`);
           }
         }else{
-          index_core.warning('sarif_file not set');
+          core.warning('sarif_file not set');
         }
 
         // get build history from metadata
-        if(index_core.getInput('build_output_metadata')){
-          const metadata = JSON.parse(index_core.getInput('build_output_metadata'));
+        if(core.getInput('build_output_metadata')){
+          const metadata = JSON.parse(core.getInput('build_output_metadata'));
           const buildID = metadata?.["buildx.build.ref"].split('/').pop();
           opt.build_log = await index_run('docker', ['buildx', 'history', 'logs', buildID]);
-          index_core.info(`opt.build_log has ${[...opt.build_log].reduce((a, c) => a + (c === '\n' ? 1 : 0), 0)} lines`);
+          core.info(`opt.build_log has ${[...opt.build_log].reduce((a, c) => a + (c === '\n' ? 1 : 0), 0)} lines`);
         }else{
-          index_core.warning('build_output_metadata not set');
+          core.warning('build_output_metadata not set');
         }
 
         // start creating README.md
         const readme = new README(opt);
       }catch(err){
-        index_core.warning(inspect(err, {showHidden:false, depth:null}));
+        core.warning(inspect(err, {showHidden:false, depth:null}));
       }
     })();    
   }
 }catch(err){
-  index_core.error(inspect(err, {showHidden:false, depth:null}));
-  index_core.setFailed(`action failed with error ${err.message}`);
+  core.error(inspect(err, {showHidden:false, depth:null}));
+  core.setFailed(`action failed with error ${err.message}`);
 }
 module.exports = __webpack_exports__;
 /******/ })()

@@ -1,6 +1,7 @@
 const { existsSync, createWriteStream, readFileSync, createReadStream, symlinkSync } = require('node:fs');
 const { Readable } = require('node:stream');
 const tar = require('tar');
+const core = require('@actions/core');
 
 class Grype{
   static getCVE(db, ID){
