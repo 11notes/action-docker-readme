@@ -1,127 +1,13 @@
-const fs = require('node:fs');
-const { inspect } = require('node:util');
-const { spawn, spawnSync } = require('node:child_process');
-const path = require('node:path');
-const core = require('@actions/core');
 const args = process.argv.slice(2);
 
-const run = async(bin, args) => {
-  return(new Promise((resolve, reject) => {
-    const param = (Array.isArray(args) ? args : args.split(' '));
-    core.info(`run ${bin} ${param.join(' ')}`);
-    const ps = spawn(bin, param, {shell:true, stdio:['pipe', 'pipe', 'pipe']});
-    const io = {stdout:'', stderr:''};
-    ps.stderr.on('data', data => {io.stderr += data.toString()});
-    ps.stdout.on('data', data => {io.stdout += data.toString()});
-    ps.on('error', error => {reject(error)});
-    ps.on('close', code => {
-      if(code === 0){
-        if(io.stderr.length > 0 && io.stdout.length <= 0){
-          resolve(io.stderr.trim());
-        }else{
-          resolve(io.stdout.trim());
-        }
-      }else{
-        reject(io.stderr);
-      }
-    });
-  }));
-}
+const fs = require('node:fs');
+const { inspect } = require('node:util');
+const { resolve } = require('node:path');
+const core = require('@actions/core');
 
-class CVEReport{
-  #CVEs = {};
-  #markdown = [];
-  #fetchCache = {};
-
-  constructor(opt){
-    if(opt?.title){
-      this.#markdown.push(opt.title);
-    }
-    if(opt?.text){
-      this.#markdown.push(opt.text);
-    }
-    this.#markdown.push('| ID | Severity | Complexity | Vector | Source |');
-    this.#markdown.push('| --- | --- | --- | --- | --- |');
-  }
-
-  add(ID){
-    if(!this.#CVEs[ID]){
-      this.#CVEs[ID] = true;
-    }
-  }
-
-  async create(){
-    const CVEs = [];
-    for(const ID in this.#CVEs){
-      const update = await this.#fetch(ID);
-      if(update){
-        CVEs.push(update);
-      }
-    }
-
-    if(CVEs.length > 0){
-      CVEs.sort((a, b) => {return(b.severity - a.severity)});
-      for(const CVE of CVEs){
-        this.#markdown.push(`| ${CVE.id} | ${this.#severityToText(CVE.severity)} | ${CVE.complexity} | ${CVE.vector} | [${CVE.id}](https://nvd.nist.gov/vuln/detail/${CVE.id}) |`);
-      }
-      return(this.#markdown.join("\r\n"));
-    }else{
-      core.warning(`could not create report for ${this.#markdown[0]}`);
-      return('');
-    }
-  }
-
-  async #fetch(ID){
-    try{
-      if(this.#fetchCache[ID]){
-        return(this.#fetchCache[ID]);
-      }else{
-        const response = await fetch(`https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=${ID}`, {signal:AbortSignal.timeout(15000)});
-        if(!response.ok){
-          throw new Error(`received HTTP status ${response.status}`);
-        }else{
-          const json = await response.json();
-          const nist = {
-            cvss:{},
-          }
-  
-          if(json?.vulnerabilities?.[0]?.cve?.metrics?.cvssMetricV31?.[0]){
-            nist.cvss = json.vulnerabilities[0].cve.metrics.cvssMetricV31[0];
-          }else if(json?.vulnerabilities?.[0]?.cve?.metrics?.cvssMetricV30?.[0]){
-            nist.cvss = json.vulnerabilities[0].cve.metrics.cvssMetricV30[0];
-          }
-  
-          if(nist.cvss?.cvssData){
-            const result = {
-              id:ID,
-              severity:nist.cvss?.cvssData?.baseScore || 0,
-              vector:nist.cvss?.cvssData?.attackVector.toLowerCase() || '',
-              complexity:nist.cvss?.cvssData?.attackComplexity.toLowerCase() || '',
-            };
-
-            this.#fetchCache[ID] = result;
-            return(result);
-          }else{
-            throw new Error('could not access cvssMetricV31 or cvssMetricV30');
-          }
-        }
-      }
-    }catch(e){
-      core.warning(`${e.message} // ${ID}`);
-      return(false);
-    }
-  }
-
-  #severityToText(severity){
-    switch(true){
-      case severity <= 0: return('none');
-      case severity > 0 && severity <= 3.9: return('low');
-      case severity >= 4 && severity <= 6.9: return('medium');
-      case severity >= 7 && severity <= 8.9: return('high');
-      case severity >= 9: return('critical');
-    }
-  }
-}
+const Grype = require('./grype.js');
+const { Report } = require('./cve.js');
+const run = require('./run.js');
 
 class README{
   #debug;
@@ -245,7 +131,7 @@ class README{
   async #parseInputs(opt){
     if(opt.sarif?.runs && Array.isArray(opt.sarif.runs) && opt.sarif.runs.length > 0){
       if(/grype/i.test(opt.sarif.runs[0]?.tool?.driver?.name)){
-        const report = new CVEReport({
+        const report = new Report({
           title:this.#default.title.sarif,
         });
 
@@ -268,7 +154,7 @@ class README{
 
     if(opt.build_log.length > 0){
       // find CVE fixed that were applied during build
-      const report = new CVEReport({
+      const report = new Report({
         title:this.#default.title.patches,
         text:this.#default.text.patches,
       });
@@ -433,14 +319,20 @@ class README{
 
 try{
   if(args.length && args[0] === 'debug'){
-    const readme = new README({
-      sarif:JSON.parse(fs.readFileSync('report.sarif', 'utf-8')),
-      build_log:fs.readFileSync('buildx.log', 'utf-8').toString(),
-      debug:true,
-    });
+    (async()=>{
+      await Grype.download(); 
+
+      const readme = new README({
+        sarif:JSON.parse(fs.readFileSync('report.sarif', 'utf-8')),
+        build_log:fs.readFileSync('buildx.log', 'utf-8').toString(),
+        debug:true,
+      });
+    })();
   }else{
     (async()=>{
       try{
+        await Grype.download(); 
+
         const opt = {
           sarif:{},
           build_log:'',
@@ -448,7 +340,7 @@ try{
 
         // get sarif
         if(core.getInput('sarif_file')){
-          const sarifPath = path.resolve(core.getInput('sarif_file'));
+          const sarifPath = resolve(core.getInput('sarif_file'));
           if(fs.existsSync(sarifPath)){
             opt.sarif = JSON.parse(fs.readFileSync(sarifPath, 'utf-8'));
           }else{
@@ -463,8 +355,7 @@ try{
           const metadata = JSON.parse(core.getInput('build_output_metadata'));
           const buildID = metadata?.["buildx.build.ref"].split('/').pop();
           opt.build_log = await run('docker', ['buildx', 'history', 'logs', buildID]);
-          core.info(`opt.build_log has ${[...opt.build_log].reduce((a, c) => a + (c === '\n' ? 1 : 0), 0)} rows`);
-          core.info(`opt.build_log.length = ${opt.build_log.length}`);
+          core.info(`opt.build_log has ${[...opt.build_log].reduce((a, c) => a + (c === '\n' ? 1 : 0), 0)} lines`);
         }else{
           core.warning('build_output_metadata not set');
         }

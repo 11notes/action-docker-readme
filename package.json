@@ -20,6 +20,7 @@
   "homepage": "https://github.com/11notes/action-docker-readme#readme",
   "dependencies": {
     "@actions/core": "^1.2.6",
-    "@actions/github": "^4.0.0"
+    "@actions/github": "^4.0.0",
+    "tar": "^7.4.3"
   }
 }

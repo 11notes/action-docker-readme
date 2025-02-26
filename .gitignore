@@ -12,3 +12,8 @@ default.conf
 report.sarif
 buildx.log
 TREADME.md
+grype.listing.json
+grype.db.tar.gz
+vulnerability.db
+provider-metadata.json
+metadata.json
