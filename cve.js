@@ -4,7 +4,6 @@ const Grype = require('./grype.js');
 class Report{
   #CVEs = {};
   #markdown = [];
-  #db;
 
   constructor(opt){
     if(opt?.title){
@@ -15,8 +14,6 @@ class Report{
     }
     this.#markdown.push('| ID | Severity | Risk | Vector | Source |');
     this.#markdown.push('| --- | --- | --- | --- | --- |');
-
-    this.#db = require('better-sqlite3')('vulnerability.db');    
   }
 
   add(ID){
@@ -28,7 +25,7 @@ class Report{
   async create(){
     const CVEs = [];
     for(const ID in this.#CVEs){
-      const update = Grype.getCVE(this.#db, ID);
+      const update = Grype.getCVE(ID);
       if(update && update.vector.length > 0){
         CVEs.push(update);
       }else{

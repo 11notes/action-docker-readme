@@ -320,7 +320,7 @@ class README{
 try{
   if(args.length && args[0] === 'debug'){
     (async()=>{
-      await Grype.download(); 
+      await Grype.init(); 
 
       const readme = new README({
         sarif:JSON.parse(fs.readFileSync('report.sarif', 'utf-8')),
@@ -331,7 +331,7 @@ try{
   }else{
     (async()=>{
       try{
-        await Grype.download(); 
+        await Grype.init(); 
 
         const opt = {
           sarif:{},

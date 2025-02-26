@@ -1,19 +1,22 @@
-const { existsSync, createWriteStream, readFileSync, createReadStream, symlinkSync } = require('node:fs');
+const { existsSync, createWriteStream, readFileSync, createReadStream } = require('node:fs');
 const { Readable } = require('node:stream');
 const tar = require('tar');
 const core = require('@actions/core');
+const sqlite3 = require('better-sqlite3');
 
 class Grype{
-  static getCVE(db, ID){
+  static database;
+
+  static getCVE(ID){
     const query = {
       result:[],
     };
     
-    const qDefault = db.prepare(`SELECT DISTINCT cvss FROM vulnerability_metadata WHERE data_source = 'https://nvd.nist.gov/vuln/detail/${ID}' AND json_extract(cvss, '$[0]') NOT NULL`).all();
+    const qDefault = Grype.database.prepare(`SELECT DISTINCT cvss FROM vulnerability_metadata WHERE data_source = 'https://nvd.nist.gov/vuln/detail/${ID}' AND json_extract(cvss, '$[0]') NOT NULL`).all();
     if(qDefault && Array.isArray(qDefault) && qDefault.length > 0){
       query.result = qDefault;
     }else{
-      const qNotNull = db.prepare(`SELECT DISTINCT cvss FROM vulnerability_metadata WHERE id = '${ID}' AND json_extract(cvss, '$[0]') NOT NULL`).all();
+      const qNotNull = Grype.database.prepare(`SELECT DISTINCT cvss FROM vulnerability_metadata WHERE id = '${ID}' AND json_extract(cvss, '$[0]') NOT NULL`).all();
       if(qNotNull && Array.isArray(qNotNull) && qNotNull.length > 0){
         query.result = qNotNull;
       }
@@ -48,7 +51,7 @@ class Grype{
     });
   }
 
-  static async download(){
+  static async init(){
     const files = {
       db:'vulnerability.db',
       listing:'grype.listing.json',
@@ -59,8 +62,11 @@ class Grype{
     };
 
     if(existsSync(files.cache.src)){
-      symlinkSync(files.cache.src, files.db);
-      core.info(`found existing grype database at ${files.cache.src}`);
+      core.info(`found previous grype database at ${files.cache.src}`);
+      Grype.database = new sqlite3(files.cache.src, {readonly:true});
+    }else if(existsSync(files.db)){
+      core.info(`found existing grype database at ${files.db}`);
+      Grype.database = new sqlite3(files.db, {readonly:true});
     }
 
     if(!existsSync(files.db)){
@@ -79,6 +85,7 @@ class Grype{
               sync:true
             });
             core.info(`successfully downloaded ${files.db}`);
+            Grype.database = new sqlite3(files.db, {readonly:true});
           }
         }
       }catch(e){
