@@ -9,8 +9,16 @@ const Grype = require('./grype.js');
 const { Report } = require('./cve.js');
 const run = require('./run.js');
 
+process
+  .on('unhandledRejection', (e, p) => {
+    core.error(e.toString());
+  })
+  .on('uncaughtException', e => {
+    core.error(e.toString());
+  });
+
 class README{
-  #debug;
+  #debug = false;
   #env = {};
   #header = [];
   #footer = [];
@@ -249,6 +257,7 @@ class README{
       this.#default.content.tags = `${this.#default.title.tags}\r\n${this.#default.text.tags}\r\n\r\n${list.join("\r\n")}`;
 
       if(hasUnraid){
+        core.info('add UNRAID to README.md');
         this.#default.content.tags += `\r\n\r\n${this.#default.content.unraid}`;
       }
     }
@@ -310,6 +319,7 @@ class README{
 
     // write file
     if(!this.#debug){
+      core.info('writing updated README.md');
       fs.writeFileSync('./README.md', output.markdown);
     }else{
       fs.writeFileSync('./TREADME.md', output.markdown);
