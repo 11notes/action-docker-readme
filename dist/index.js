@@ -10,7 +10,6 @@ const Grype = __nccwpck_require__(9097);
 class Report{
   #CVEs = {};
   #markdown = [];
-  #db;
 
   constructor(opt){
     if(opt?.title){
