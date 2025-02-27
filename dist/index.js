@@ -807,6 +807,15 @@ const Database = __nccwpck_require__(18);
 const { inspect } = __nccwpck_require__(975);
 const os = __nccwpck_require__(161);
 
+process
+  .on('unhandledRejection', (reason, p) => {
+    process.stderr.write(inspect({reason:reason, promise:p}, {showHidden:false, depth:null}) + os.EOL);
+  })
+  .on('uncaughtException', e => {
+    process.stderr.write(inspect({exception:e}, {showHidden:false, depth:null}) + os.EOL);
+    process.exit(1);
+  });
+
 try{
   /*
   const README = require('./src/README.js');
@@ -814,8 +823,11 @@ try{
   Eleven.info('starting action-docker-readme');
   readme.init();
   */
+  process.stdout.write(inspect(__dirname, {showHidden:false, depth:null, colors:true}) + os.EOL);
+  const opt = {verbose:process.stderr.write, readonly:true, timeout:120*1000, nativeBinding:__nccwpck_require__.ab + "better_sqlite3.node"};
   process.stdout.write(inspect('starting test', {showHidden:false, depth:null, colors:true}) + os.EOL);
-  const db = new Database('/home/runner/.cache/grype/db/5/vulnerability.db');
+  process.stdout.write(inspect(opt, {showHidden:false, depth:null, colors:true}) + os.EOL);
+  const db = new Database('/home/runner/.cache/grype/db/5/vulnerability.db', opt);
   process.stdout.write(inspect('db connected', {showHidden:false, depth:null, colors:true}) + os.EOL);
   const stmt = db.prepare('SELECT * FROM id WHERE schema_version = 5');
   process.stdout.write(inspect('statement prepared', {showHidden:false, depth:null, colors:true}) + os.EOL);
