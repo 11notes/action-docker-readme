@@ -22,20 +22,20 @@ module.exports = class Inputs{
                   CVEs.push(match[1]);
                 }
               }else{
-                Eleven.info(`sarif_file rule ${rules.id} is not a valid CVE ID!`);
+                Eleven.warning(`sarif_file rule ${rules.id} is not a valid CVE ID!`, e);
               }
             }
           }else{
-            Eleven.info(`sarif_file ${file} is not a grype report!`);
+            Eleven.warning(`sarif_file ${file} is not a grype report!`);
           }
         }catch(e){
-          Eleven.info(`sarif_file ${file} is not a grype report! Exception ${e.toString()}`);
+          Eleven.warning(`sarif_file ${file} is not a grype report!`, e);
         }
       }catch(e){
-        Eleven.info(`sarif_file ${file} not a valid JSON file! Exception ${e.toString()}`);
+        Eleven.warning(`sarif_file ${file} not a valid JSON file!`, e);
       }
     }else{
-      Eleven.info(`sarif_file ${file} not found!`);
+      Eleven.warning(`sarif_file ${file} not found!`);
     }
     return(CVEs);
   }
@@ -55,13 +55,13 @@ module.exports = class Inputs{
           try{
             log = await run('docker', ['buildx', 'history', 'logs', id]);
           }catch(e){
-            Eleven.info(`build_output_metadata could not call buildx history logs.`);
+            Eleven.warning(`build_output_metadata could not call buildx history logs.`, e);
           }
         }catch(e){
-          Eleven.info(`build_output_metadata buildx.build.ref is not set!`);
+          Eleven.warning(`build_output_metadata buildx.build.ref is not set!`, e);
         }
       }catch(e){
-        Eleven.info(`build_output_metadata is not a valid JSON object!`);
+        Eleven.warning(`build_output_metadata is not a valid JSON object!`, e);
       }
     }
 
