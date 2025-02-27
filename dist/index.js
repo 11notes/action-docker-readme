@@ -26750,28 +26750,33 @@ class Eleven{
 
   static debug(){
     if(Eleven.#debug){
-      if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${new Date().getMilliseconds()}   ${arguments[0]}`;
+      if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}   ${arguments[0]}`;
       core.info.apply(Eleven, [inspect.apply(Eleven, arguments).slice(1,-1)]);
     }
   }
 
   static info(){
-    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${new Date().getMilliseconds()}   ${arguments[0]}`;
+    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}   ${arguments[0]}`;
     core.info.apply(Eleven, arguments);
   }
 
   static warning(){
-    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${new Date().getMilliseconds()}   ${arguments[0]}`;
+    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}   ${arguments[0]}`;
     core.warning.apply(Eleven, arguments);
   }
 
   static error(){
-    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${new Date().getMilliseconds()}   ${arguments[0]}`;
+    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}   ${arguments[0]}`;
     core.error.apply(Eleven, arguments);
   }
 
   static notice(){
     core.notice.apply(Eleven, arguments);
+  }
+
+  static memory(){
+    const memoryUsage = process.memoryUsage();
+    Eleven.debug(`RSS: ${memoryUsage.rss} Heap Total: ${memoryUsage.heapTotal} Heap Used: ${memoryUsage.heapUsed}`);
   }
 
   static ref(){
@@ -26784,6 +26789,15 @@ class Eleven{
       global.Eleven = Eleven;
     }
     return(global.Eleven);
+  }
+
+  static #stdoutms(ms){
+    switch(String(ms).length){
+      case 0: return('000');
+      case 1: return(`00${ms}`);
+      case 2: return(`0${ms}`);
+      default: return(ms);
+    }
   }
 }
 
@@ -26874,14 +26888,18 @@ class Grype{
       fileMustExist:true,
     };
 
+    Eleven.memory();
+
     if(existsSync(files.cache.src)){
       Eleven.info(`found previous grype database at ${files.cache.src}`);
       try{
         Eleven.debug(`open sqlite database ${files.cache.src} with options:`);
         Eleven.debug(sqliteOptions);
         Grype.database = new Database(files.cache.src, sqliteOptions);
+        Eleven.memory();
       }catch(e){
         Eleven.warning(`sqlite exception ${e.toString()}`);
+        Eleven.debug(e);
       }      
     }else if(existsSync(files.db)){
       Eleven.info(`found existing grype database at ${files.db}`);
@@ -26921,10 +26939,6 @@ class Grype{
         Eleven.warning(e.toString());
       }
     }
-
-    Eleven.info('start sleep');
-    await new Promise(r => setTimeout(r, 5000));
-    Eleven.info('stop sleep');
 
     if(Grype.database){
       try{
@@ -36892,8 +36906,8 @@ const Eleven = __nccwpck_require__(3393);
     const readme = new README();
     await readme.init();
   }catch(e){
-    Eleven.debug(e);
     Eleven.warning(e.toString());
+    Eleven.debug(e);
   }
 })();
 module.exports = __webpack_exports__;

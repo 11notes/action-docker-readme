@@ -30,28 +30,33 @@ class Eleven{
 
   static debug(){
     if(Eleven.#debug){
-      if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${new Date().getMilliseconds()}   ${arguments[0]}`;
+      if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}   ${arguments[0]}`;
       core.info.apply(Eleven, [inspect.apply(Eleven, arguments).slice(1,-1)]);
     }
   }
 
   static info(){
-    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${new Date().getMilliseconds()}   ${arguments[0]}`;
+    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}   ${arguments[0]}`;
     core.info.apply(Eleven, arguments);
   }
 
   static warning(){
-    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${new Date().getMilliseconds()}   ${arguments[0]}`;
+    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}   ${arguments[0]}`;
     core.warning.apply(Eleven, arguments);
   }
 
   static error(){
-    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${new Date().getMilliseconds()}   ${arguments[0]}`;
+    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}   ${arguments[0]}`;
     core.error.apply(Eleven, arguments);
   }
 
   static notice(){
     core.notice.apply(Eleven, arguments);
+  }
+
+  static memory(){
+    const memoryUsage = process.memoryUsage();
+    Eleven.debug(`RSS: ${memoryUsage.rss} Heap Total: ${memoryUsage.heapTotal} Heap Used: ${memoryUsage.heapUsed}`);
   }
 
   static ref(){
@@ -64,6 +69,15 @@ class Eleven{
       global.Eleven = Eleven;
     }
     return(global.Eleven);
+  }
+
+  static #stdoutms(ms){
+    switch(String(ms).length){
+      case 0: return('000');
+      case 1: return(`00${ms}`);
+      case 2: return(`0${ms}`);
+      default: return(ms);
+    }
   }
 }
 
