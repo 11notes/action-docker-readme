@@ -92,6 +92,7 @@ class Grype{
         Eleven.debug(`open sqlite database ${files.cache.src} with options:`);
         Eleven.debug(sqliteOptions);
         Grype.database = new Database(files.cache.src, sqliteOptions);
+        Eleven.debug('silly stack trace');
       }catch(e){
         Eleven.warning(`sqlite exception ${e.toString()}`);
       }      

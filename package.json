@@ -4,7 +4,7 @@
   "description": "This action will create the README.md for my container image builds on github and Docker hub.",
   "main": "index.js",
   "scripts": {
-    "build": "npx ncc build index.js --license licenses.txt",
+    "build": "npx ncc build index.js --license licenses.txt && npm run commit",
     "dev": "node index.js development",
     "test": "node ./dist/index.js development",
     "commit": "copy better_sqlite3.node dist\\build\\Release"
