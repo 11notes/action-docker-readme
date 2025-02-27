@@ -824,7 +824,7 @@ try{
   readme.init();
   */
   process.stdout.write(inspect(__dirname, {showHidden:false, depth:null, colors:true}) + os.EOL);
-  const opt = {verbose:process.stderr.write, readonly:true, timeout:120*1000, nativeBinding:__nccwpck_require__.ab + "better_sqlite3.node"};
+  const opt = {verbose:process.stderr.write, readonly:true, timeout:120*1000, nativeBinding:'./build/Release/better_sqlite3.node'};
   process.stdout.write(inspect('starting test', {showHidden:false, depth:null, colors:true}) + os.EOL);
   process.stdout.write(inspect(opt, {showHidden:false, depth:null, colors:true}) + os.EOL);
   const db = new Database('/home/runner/.cache/grype/db/5/vulnerability.db', opt);
