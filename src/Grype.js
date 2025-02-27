@@ -1,10 +1,8 @@
 const Eleven = require('./Eleven.js');
 const { existsSync, createWriteStream, readFileSync, createReadStream } = require('node:fs');
-const { resolve } = require('node:path');
 const { Readable } = require('node:stream');
 const tar = require('tar');
 const Database = require('better-sqlite3');
-
 
 class Grype{
   static database = false;
@@ -91,7 +89,6 @@ class Grype{
         Eleven.debug(`open sqlite database ${files.cache.src} with options:`);
         Eleven.debug(sqliteOptions);
         Grype.database = new Database(files.cache.src, sqliteOptions);
-        Eleven.debug('silly stack trace');
       }catch(e){
         Eleven.warning(`sqlite exception ${e.toString()}`);
       }      

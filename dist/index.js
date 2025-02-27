@@ -26792,11 +26792,9 @@ module.exports = Eleven.ref();
 
 const Eleven = __nccwpck_require__(3393);
 const { existsSync, createWriteStream, readFileSync, createReadStream } = __nccwpck_require__(3024);
-const { resolve } = __nccwpck_require__(6760);
 const { Readable } = __nccwpck_require__(7075);
 const tar = __nccwpck_require__(463);
 const Database = __nccwpck_require__(477);
-
 
 class Grype{
   static database = false;
@@ -26883,7 +26881,6 @@ class Grype{
         Eleven.debug(`open sqlite database ${files.cache.src} with options:`);
         Eleven.debug(sqliteOptions);
         Grype.database = new Database(files.cache.src, sqliteOptions);
-        Eleven.debug('silly stack trace');
       }catch(e){
         Eleven.warning(`sqlite exception ${e.toString()}`);
       }      
@@ -36882,20 +36879,15 @@ exports.Node = Node;
 var __webpack_exports__ = {};
 const Eleven = __nccwpck_require__(3393);
 
-process
-  .on('unhandledRejection', (e, p) => {
-    Eleven.debug(e);
-    Eleven.error(e.toString());
-  })
-  .on('uncaughtException', e => {
-    Eleven.debug(e);
-    Eleven.error(e.toString());
-  });
-
 (async()=>{
-  const README = __nccwpck_require__(6394);
-  const readme = new README();
-  await readme.init();
+  try{
+    const README = __nccwpck_require__(6394);
+    const readme = new README();
+    await readme.init();
+  }catch(e){
+    Eleven.debug(e);
+    Eleven.warning(e.toString());
+  }
 })();
 module.exports = __webpack_exports__;
 /******/ })()
