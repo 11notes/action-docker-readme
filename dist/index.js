@@ -26795,11 +26795,11 @@ const { existsSync, createWriteStream, readFileSync, createReadStream } = __nccw
 const { resolve } = __nccwpck_require__(6760);
 const { Readable } = __nccwpck_require__(7075);
 const tar = __nccwpck_require__(434);
-const sqlite3 = __nccwpck_require__(8312);
+const Database = __nccwpck_require__(8312);
 
 
 class Grype{
-  static database;
+  static database = false;
   static cutoff = 7;
 
   static getCVE(ID){
@@ -26809,22 +26809,22 @@ class Grype{
     
     try{
       const qDefault = Grype.database.prepare(`SELECT DISTINCT cvss FROM vulnerability_metadata WHERE data_source = 'https://nvd.nist.gov/vuln/detail/${ID}' AND json_extract(cvss, '$[0]') NOT NULL`).all();
+      if(qDefault && Array.isArray(qDefault) && qDefault.length > 0){
+        query.rows = qDefault;
+      }else{
+        try{
+          const qNotNull = Grype.database.prepare(`SELECT DISTINCT cvss FROM vulnerability_metadata WHERE id = '${ID}' AND json_extract(cvss, '$[0]') NOT NULL`).all();
+          if(qNotNull && Array.isArray(qNotNull) && qNotNull.length > 0){
+            query.rows = qNotNull;
+          }
+        }catch(e){
+          Eleven.warning(`SQLite error occured`);
+          Eleven.debug(e);
+        }
+      }
     }catch(e){
       Eleven.warning(`SQLite error occured`);
       Eleven.debug(e);
-    }
-    if(qDefault && Array.isArray(qDefault) && qDefault.length > 0){
-      query.rows = qDefault;
-    }else{
-      try{
-        const qNotNull = Grype.database.prepare(`SELECT DISTINCT cvss FROM vulnerability_metadata WHERE id = '${ID}' AND json_extract(cvss, '$[0]') NOT NULL`).all();
-      }catch(e){
-        Eleven.warning(`SQLite error occured`);
-        Eleven.debug(e);
-      }
-      if(qNotNull && Array.isArray(qNotNull) && qNotNull.length > 0){
-        query.rows = qNotNull;
-      }
     }
 
     if(query.rows.length > 0){
@@ -26871,7 +26871,6 @@ class Grype{
     const sqliteOptions = {
       readonly:true,
       fileMustExist:true,
-      nativeBinding:resolve(`${__dirname}/build/Release/better_sqlite3.node`),
       timeout:30*1000,
     };
 
@@ -26884,7 +26883,7 @@ class Grype{
       try{
         Eleven.debug(`open sqlite database ${files.cache.src} with options:`);
         Eleven.debug(sqliteOptions);
-        Grype.database = new sqlite3(files.cache.src, sqliteOptions);
+        Grype.database = new Database(files.cache.src, sqliteOptions);
       }catch(e){
         Eleven.warning(`sqlite exception ${e.toString()}`);
       }      
@@ -26893,7 +26892,7 @@ class Grype{
       try{
         Eleven.debug(`open sqlite database ${files.db} with options:`);
         Eleven.debug(sqliteOptions);
-        Grype.database = new sqlite3(files.db, sqliteOptions);
+        Grype.database = new Database(files.db, sqliteOptions);
       }catch(e){
         Eleven.warning(`sqlite exception ${e.toString()}`);
       } 
@@ -26916,7 +26915,7 @@ class Grype{
             try{
               Eleven.debug(`open sqlite database ${files.db} with options:`);
               Eleven.debug(sqliteOptions);
-              Grype.database = new sqlite3(files.db, sqliteOptions);
+              Grype.database = new Database(files.db, sqliteOptions);
             }catch(e){
               Eleven.warning(`sqlite exception ${e.toString()}`);
             }
@@ -26925,6 +26924,20 @@ class Grype{
       }catch(e){
         Eleven.warning(e.toString());
       }
+    }
+
+    if(Grype.database){
+      try{
+        const qVersion = Grype.database.prepare('SELECT * FROM id WHERE schema_version = 5').all();
+        if(qVersion){
+          Eleven.info(`using grype database from ${qVersion[0].build_timestamp}`);
+        }
+      }catch(e){
+        Eleven.warning(e.toString());
+      }
+    }else{
+      Eleven.warning('grype database not a valid object');
+      Eleven.debug(Grype.database);
     }
   }
 
@@ -27051,6 +27064,8 @@ module.exports = class README{
   }
 
   async init(){
+
+    Eleven.debug(`current workdir is ${__dirname}`);
 
     if(core.getInput('development')){
       Eleven.environment('development');

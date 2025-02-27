@@ -28,6 +28,8 @@ module.exports = class README{
 
   async init(){
 
+    Eleven.debug(`current workdir is ${__dirname}`);
+
     if(core.getInput('development')){
       Eleven.environment('development');
     }
