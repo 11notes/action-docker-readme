@@ -57,7 +57,7 @@ module.exports = class README{
       }
 
       this.#loadImageFiles();
-      await this.#setupEnvironment();
+      this.#setupEnvironment();
       this.#create();
     }catch(e){
       Eleven.error(`Exception occured! ${e}`);
@@ -98,7 +98,7 @@ module.exports = class README{
     });
   }
 
-  async #setupEnvironment(){
+  #setupEnvironment(){
 
     try{
       //await Grype.init();

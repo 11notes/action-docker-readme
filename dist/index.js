@@ -27409,7 +27409,7 @@ module.exports = class README{
       }
 
       this.#loadImageFiles();
-      await this.#setupEnvironment();
+      this.#setupEnvironment();
       this.#create();
     }catch(e){
       Eleven.error(`Exception occured! ${e}`);
@@ -27450,7 +27450,7 @@ module.exports = class README{
     });
   }
 
-  async #setupEnvironment(){
+  #setupEnvironment(){
 
     try{
       //await Grype.init();
@@ -37874,16 +37874,14 @@ exports.Node = Node;
 var __webpack_exports__ = {};
 const Eleven = __nccwpck_require__(7248);
 
-(async()=>{
+try{
+  const README = __nccwpck_require__(411);
+  const readme = new README();
   Eleven.info('starting action-docker-readme');
-  try{
-    const README = __nccwpck_require__(411);
-    const readme = new README();
-    await readme.init();
-  }catch(e){
-    Eleven.info(e);
-  }
-})();
+  readme.init();
+}catch(e){
+  Eleven.info(e);
+}
 module.exports = __webpack_exports__;
 /******/ })()
 ;
