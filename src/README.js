@@ -101,7 +101,7 @@ module.exports = class README{
   async #setupEnvironment(){
 
     try{
-      await Grype.init();
+      //await Grype.init();
     }catch(e){
       Eleven.info(e);
     }

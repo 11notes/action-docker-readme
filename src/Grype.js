@@ -8,10 +8,13 @@ const sqlite3 = require('sqlite3')
 const { open } = require('sqlite');
 
 class Grype{
-  static database;
+  static database = false;
   static cutoff = 7;
 
   static getCVE(ID){
+    if(!Grype.database){
+      return(false);
+    }
     const query = {
       rows:[],
     };

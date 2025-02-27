@@ -27093,10 +27093,13 @@ const sqlite3 = __nccwpck_require__(1844)
 const { open } = __nccwpck_require__(6436);
 
 class Grype{
-  static database;
+  static database = false;
   static cutoff = 7;
 
   static getCVE(ID){
+    if(!Grype.database){
+      return(false);
+    }
     const query = {
       rows:[],
     };
@@ -27450,7 +27453,7 @@ module.exports = class README{
   async #setupEnvironment(){
 
     try{
-      await Grype.init();
+      //await Grype.init();
     }catch(e){
       Eleven.info(e);
     }
