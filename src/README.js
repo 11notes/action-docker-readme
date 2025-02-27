@@ -1,5 +1,4 @@
 const Eleven = require('./Eleven.js');
-const Grype = require('./Grype.js');
 const Inputs = require('./Inputs.js');
 const markdownCVE = require('./markdownCVE.js');
 
@@ -47,7 +46,11 @@ module.exports = class README{
             }else{
               inputs[input].value = core.getInput(input);
             }
-            this.#inputs[input] = await Inputs[input].apply(this, [inputs[input].value]);
+            try{
+              this.#inputs[input] = await Inputs[input].apply(this, [inputs[input].value]);
+            }catch(e){
+
+            }
           }else{
             Eleven.info(`input ${input} is not a valid function!`);
           }
@@ -60,8 +63,7 @@ module.exports = class README{
       this.#setupEnvironment();
       this.#create();
     }catch(e){
-      Eleven.error(`Exception occured! ${e}`);
-      Eleven.debug(e);
+      Eleven.info(e);
     }
   }
 
@@ -100,15 +102,19 @@ module.exports = class README{
 
   #setupEnvironment(){
 
+    /*
     try{
-      //await Grype.init();
+      await Grype.init();
     }catch(e){
       Eleven.info(e);
     }
+    */
 
     if(this.#json?.readme?.grype?.severity > 0){
+      /*
       Grype.cutoff = this.#json.readme.grype.severity;
       Eleven.debug(`set grype markdown cutoff to ${Grype.cutoff}`);
+      */
     }
     
     if(this.#inputs.sarif_file && this.#inputs.sarif_file.length > 0){

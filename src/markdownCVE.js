@@ -1,5 +1,5 @@
 const Eleven = require('./Eleven.js');
-const Grype = require('./Grype.js');
+//const Grype = require('./Grype.js');
 
 module.exports = class markdownCVE{
   #CVEs = {};
@@ -30,7 +30,7 @@ module.exports = class markdownCVE{
   create(){
     const CVEs = [];
     for(const ID in this.#CVEs){
-      const update = Grype.getCVE(ID);
+      const update = false; //Grype.getCVE(ID);
       if(update && update.vector.length > 0){
         if(update.severity >= Grype.cutoff){
           CVEs.push(update);
