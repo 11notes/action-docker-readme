@@ -23,6 +23,7 @@ class Eleven{
     switch(true){
       case /development|dev/ig.test(e):
         Eleven.#debug = true;
+        Eleven.set('debug', true);
         break;
     }
   }
@@ -54,6 +55,7 @@ class Eleven{
       Eleven.arguments = process.argv.slice(2);
       if(Array.isArray(Eleven.arguments) && Eleven.arguments.length > 0 && String(Eleven.arguments[0]).toLowerCase() === 'development'){
         Eleven.#debug = true;
+        Eleven.set('debug', true);
       }
       global.Eleven = Eleven;
     }

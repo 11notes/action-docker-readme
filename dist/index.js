@@ -26743,6 +26743,7 @@ class Eleven{
     switch(true){
       case /development|dev/ig.test(e):
         Eleven.#debug = true;
+        Eleven.set('debug', true);
         break;
     }
   }
@@ -26774,6 +26775,7 @@ class Eleven{
       Eleven.arguments = process.argv.slice(2);
       if(Array.isArray(Eleven.arguments) && Eleven.arguments.length > 0 && String(Eleven.arguments[0]).toLowerCase() === 'development'){
         Eleven.#debug = true;
+        Eleven.set('debug', true);
       }
       global.Eleven = Eleven;
     }
@@ -26855,15 +26857,29 @@ class Grype{
       }
     };
 
-    if(existsSync(files.cache.src)){
-      Eleven.info(`found previous grype database at ${files.cache.src}`);
-      Grype.database = new sqlite3(files.cache.src, {readonly:true});
-    }else if(existsSync(files.db)){
-      Eleven.info(`found existing grype database at ${files.db}`);
-      Grype.database = new sqlite3(files.db, {readonly:true});
+    const sqliteOptions = {
+      readonly:true,
+    };
+
+    if(Eleven.get('debug')){
+      sqliteOptions.verbose = Eleven.debug;
     }
 
-    if(!existsSync(files.db)){
+    if(existsSync(files.cache.src)){
+      Eleven.info(`found previous grype database at ${files.cache.src}`);
+      try{
+        Grype.database = new sqlite3(files.cache.src, sqliteOptions);
+      }catch(e){
+        Eleven.warning(`sqlite exception ${e.toString()}`);
+      }      
+    }else if(existsSync(files.db)){
+      Eleven.info(`found existing grype database at ${files.db}`);
+      try{
+        Grype.database = new sqlite3(files.db, sqliteOptions);
+      }catch(e){
+        Eleven.warning(`sqlite exception ${e.toString()}`);
+      } 
+    }else{
       Eleven.warning(`could not find any grype database, downloading ...`)
       try{
         const response = await fetch('https://toolbox-data.anchore.io/grype/databases/listing.json');
@@ -26879,11 +26895,15 @@ class Grype{
               sync:true
             });
             Eleven.info(`successfully downloaded ${files.db}`);
-            Grype.database = new sqlite3(files.db, {readonly:true});
+            try{
+              Grype.database = new sqlite3(files.db, sqliteOptions);
+            }catch(e){
+              Eleven.warning(`sqlite exception ${e.toString()}`);
+            }
           }
         }
       }catch(e){
-        Eleven.warning(e);
+        Eleven.warning(e.toString());
       }
     }
   }
