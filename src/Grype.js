@@ -76,6 +76,8 @@ class Grype{
     if(existsSync(files.cache.src)){
       Eleven.info(`found previous grype database at ${files.cache.src}`);
       try{
+        Eleven.debug(`open sqlite database ${files.cache.src} with options:`);
+        Eleven.debug(sqliteOptions);
         Grype.database = new sqlite3(files.cache.src, sqliteOptions);
       }catch(e){
         Eleven.warning(`sqlite exception ${e.toString()}`);
@@ -83,6 +85,8 @@ class Grype{
     }else if(existsSync(files.db)){
       Eleven.info(`found existing grype database at ${files.db}`);
       try{
+        Eleven.debug(`open sqlite database ${files.db} with options:`);
+        Eleven.debug(sqliteOptions);
         Grype.database = new sqlite3(files.db, sqliteOptions);
       }catch(e){
         Eleven.warning(`sqlite exception ${e.toString()}`);
@@ -104,6 +108,8 @@ class Grype{
             });
             Eleven.info(`successfully downloaded ${files.db}`);
             try{
+              Eleven.debug(`open sqlite database ${files.db} with options:`);
+              Eleven.debug(sqliteOptions);
               Grype.database = new sqlite3(files.db, sqliteOptions);
             }catch(e){
               Eleven.warning(`sqlite exception ${e.toString()}`);
