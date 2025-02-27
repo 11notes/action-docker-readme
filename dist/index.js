@@ -27016,16 +27016,6 @@ const markdownCVE = __nccwpck_require__(8859);
 const core = __nccwpck_require__(8654);
 const { readdirSync, readFileSync, writeFileSync, existsSync } = __nccwpck_require__(3024);
 
-process
-  .on('unhandledRejection', (e, p) => {
-    Eleven.debug(e);
-    Eleven.error(e.toString());
-  })
-  .on('uncaughtException', e => {
-    Eleven.debug(e);
-    Eleven.error(e.toString());
-  });
-
 module.exports = class README{
   #inputs = {};
   #files = {
@@ -27477,6 +27467,14 @@ module.exports = run = async(bin, args) => {
     });
   }));
 }
+
+/***/ }),
+
+/***/ 9961:
+/***/ ((module) => {
+
+module.exports = eval("require")("./Eleven.js");
+
 
 /***/ }),
 
@@ -36861,6 +36859,18 @@ exports.Node = Node;
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
+const Eleven = __nccwpck_require__(9961);
+
+process
+  .on('unhandledRejection', (e, p) => {
+    Eleven.debug(e);
+    Eleven.error(e.toString());
+  })
+  .on('uncaughtException', e => {
+    Eleven.debug(e);
+    Eleven.error(e.toString());
+  });
+
 (async()=>{
   const README = __nccwpck_require__(569);
   const readme = new README();

@@ -6,16 +6,6 @@ const markdownCVE = require('./markdownCVE.js');
 const core = require('@actions/core');
 const { readdirSync, readFileSync, writeFileSync, existsSync } = require('node:fs');
 
-process
-  .on('unhandledRejection', (e, p) => {
-    Eleven.debug(e);
-    Eleven.error(e.toString());
-  })
-  .on('uncaughtException', e => {
-    Eleven.debug(e);
-    Eleven.error(e.toString());
-  });
-
 module.exports = class README{
   #inputs = {};
   #files = {
