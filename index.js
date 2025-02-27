@@ -1,4 +1,4 @@
-const Eleven = require('./Eleven.js');
+const Eleven = require('./src/Eleven.js');
 
 process
   .on('unhandledRejection', (e, p) => {
