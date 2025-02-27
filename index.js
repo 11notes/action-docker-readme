@@ -1,7 +1,7 @@
 const Database = require('better-sqlite3');
 const { inspect } = require('node:util');
 const os = require('node:os');
-const { existsSync, exists } = require('node:fs');
+const { existsSync } = require('node:fs');
 const { resolve } = require('node:path');
 
 process
@@ -22,7 +22,8 @@ try{
   */
   const addon = resolve(`${__dirname}/build/Release/better_sqlite3.node`);
   const databasePath = '/home/runner/.cache/grype/db/5/vulnerability.db';
-  process.stdout.write(inspect({addon:addon, databasePath:databasePath}, {showHidden:false, depth:null, colors:true}) + os.EOL);
+  const nodeVersion = process.version;
+  process.stdout.write(inspect({addon:addon, databasePath:databasePath, version:nodeVersion}, {showHidden:false, depth:null, colors:true}) + os.EOL);
   if(existsSync(addon)){
     process.stdout.write(inspect(`addon ${addon} exists`, {showHidden:false, depth:null, colors:true}) + os.EOL);
     const sqlite3 = require(addon);

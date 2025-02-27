@@ -822,7 +822,7 @@ var __webpack_exports__ = {};
 const Database = __nccwpck_require__(18);
 const { inspect } = __nccwpck_require__(975);
 const os = __nccwpck_require__(161);
-const { existsSync, exists } = __nccwpck_require__(24);
+const { existsSync } = __nccwpck_require__(24);
 const { resolve } = __nccwpck_require__(760);
 
 process
@@ -843,7 +843,8 @@ try{
   */
   const addon = resolve(`${__dirname}/build/Release/better_sqlite3.node`);
   const databasePath = '/home/runner/.cache/grype/db/5/vulnerability.db';
-  process.stdout.write(inspect({addon:addon, databasePath:databasePath}, {showHidden:false, depth:null, colors:true}) + os.EOL);
+  const nodeVersion = process.version;
+  process.stdout.write(inspect({addon:addon, databasePath:databasePath, version:nodeVersion}, {showHidden:false, depth:null, colors:true}) + os.EOL);
   if(existsSync(addon)){
     process.stdout.write(inspect(`addon ${addon} exists`, {showHidden:false, depth:null, colors:true}) + os.EOL);
     const sqlite3 = require(addon);
