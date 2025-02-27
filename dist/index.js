@@ -26869,7 +26869,6 @@ class Grype{
     };
 
     const sqliteOptions = {
-      readonly:true,
       fileMustExist:true,
       timeout:30*1000,
     };
