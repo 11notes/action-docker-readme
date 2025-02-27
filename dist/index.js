@@ -27064,39 +27064,43 @@ module.exports = class README{
   }
 
   async init(){
+    try{
+      Eleven.debug(`current workdir is ${__dirname}`);
 
-    Eleven.debug(`current workdir is ${__dirname}`);
-
-    if(core.getInput('development')){
-      Eleven.environment('development');
-    }
-
-    const inputs = {
-      sarif_file:{value:'', debug:'report.sarif'},
-      build_output_metadata:{value:'{}', debug:null},
-    };
-
-    for(const input in inputs){
-      if(core.getInput(input) || Eleven.debug){
-        if(typeof(Inputs[input]) === 'function'){
-          if(Eleven.debug && existsSync('.development')){
-            inputs[input].value = inputs[input].debug;
-          }else{
-            inputs[input].value = core.getInput(input);
-          }
-          this.#inputs[input] = await Inputs[input].apply(this, [inputs[input].value]);
-        }else{
-          Eleven.warning(`input ${input} is not a valid function!`);
-        }
-      }else{
-        Eleven.warning(`input ${input} is not set!`);
+      if(core.getInput('development')){
+        Eleven.environment('development');
       }
-    }
 
-    await Grype.init();
-    this.#loadImageFiles();
-    this.#setupEnvironment();
-    this.#create();
+      const inputs = {
+        sarif_file:{value:'', debug:'report.sarif'},
+        build_output_metadata:{value:'{}', debug:null},
+      };
+
+      for(const input in inputs){
+        if(core.getInput(input) || Eleven.debug){
+          if(typeof(Inputs[input]) === 'function'){
+            if(Eleven.debug && existsSync('.development')){
+              inputs[input].value = inputs[input].debug;
+            }else{
+              inputs[input].value = core.getInput(input);
+            }
+            this.#inputs[input] = await Inputs[input].apply(this, [inputs[input].value]);
+          }else{
+            Eleven.warning(`input ${input} is not a valid function!`);
+          }
+        }else{
+          Eleven.warning(`input ${input} is not set!`);
+        }
+      }
+
+      await Grype.init();
+      this.#loadImageFiles();
+      this.#setupEnvironment();
+      this.#create();
+    }catch(e){
+      Eleven.error(`Exception occured! ${e.toString()}`);
+      Eleven.debug(e);
+    }
   }
 
   #loadImageFiles(){
