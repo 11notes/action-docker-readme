@@ -26750,19 +26750,23 @@ class Eleven{
 
   static debug(){
     if(Eleven.#debug){
+      if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${new Date().getMilliseconds()}   ${arguments[0]}`;
       core.info.apply(Eleven, [inspect.apply(Eleven, arguments).slice(1,-1)]);
     }
   }
 
   static info(){
+    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${new Date().getMilliseconds()}   ${arguments[0]}`;
     core.info.apply(Eleven, arguments);
   }
 
   static warning(){
+    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${new Date().getMilliseconds()}   ${arguments[0]}`;
     core.warning.apply(Eleven, arguments);
   }
 
   static error(){
+    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${new Date().getMilliseconds()}   ${arguments[0]}`;
     core.error.apply(Eleven, arguments);
   }
 
@@ -26868,12 +26872,7 @@ class Grype{
 
     const sqliteOptions = {
       fileMustExist:true,
-      timeout:30*1000,
     };
-
-    if(Eleven.get('debug')){
-      sqliteOptions.verbose = Eleven.debug;
-    }
 
     if(existsSync(files.cache.src)){
       Eleven.info(`found previous grype database at ${files.cache.src}`);
@@ -26922,6 +26921,10 @@ class Grype{
         Eleven.warning(e.toString());
       }
     }
+
+    Eleven.info('start sleep');
+    await new Promise(r => setTimeout(r, 5000));
+    Eleven.info('stop sleep');
 
     if(Grype.database){
       try{

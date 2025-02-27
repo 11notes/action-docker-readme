@@ -30,19 +30,23 @@ class Eleven{
 
   static debug(){
     if(Eleven.#debug){
+      if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${new Date().getMilliseconds()}   ${arguments[0]}`;
       core.info.apply(Eleven, [inspect.apply(Eleven, arguments).slice(1,-1)]);
     }
   }
 
   static info(){
+    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${new Date().getMilliseconds()}   ${arguments[0]}`;
     core.info.apply(Eleven, arguments);
   }
 
   static warning(){
+    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${new Date().getMilliseconds()}   ${arguments[0]}`;
     core.warning.apply(Eleven, arguments);
   }
 
   static error(){
+    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${new Date().getMilliseconds()}   ${arguments[0]}`;
     core.error.apply(Eleven, arguments);
   }
 

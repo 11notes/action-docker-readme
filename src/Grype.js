@@ -76,12 +76,7 @@ class Grype{
 
     const sqliteOptions = {
       fileMustExist:true,
-      timeout:30*1000,
     };
-
-    if(Eleven.get('debug')){
-      sqliteOptions.verbose = Eleven.debug;
-    }
 
     if(existsSync(files.cache.src)){
       Eleven.info(`found previous grype database at ${files.cache.src}`);
@@ -130,6 +125,10 @@ class Grype{
         Eleven.warning(e.toString());
       }
     }
+
+    Eleven.info('start sleep');
+    await new Promise(r => setTimeout(r, 5000));
+    Eleven.info('stop sleep');
 
     if(Grype.database){
       try{
