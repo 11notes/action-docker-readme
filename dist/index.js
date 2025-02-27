@@ -26776,7 +26776,11 @@ class Eleven{
 
   static memory(){
     const memoryUsage = process.memoryUsage();
-    Eleven.debug(`RSS: ${memoryUsage.rss} Heap Total: ${memoryUsage.heapTotal} Heap Used: ${memoryUsage.heapUsed}`);
+    const mb = {};
+    for(const k in memoryUsage){
+      mb[k] = parseFloat(Number(memoryUsage[k]/1024/1024).toFixed(4));
+    }
+    Eleven.debug(mb);
   }
 
   static ref(){
@@ -26809,7 +26813,7 @@ module.exports = Eleven.ref();
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const Eleven = __nccwpck_require__(3393);
-const { existsSync, createWriteStream, readFileSync, createReadStream } = __nccwpck_require__(3024);
+const { existsSync, createWriteStream, readFileSync, createReadStream, closeSync, openSync } = __nccwpck_require__(3024);
 const { Readable } = __nccwpck_require__(7075);
 const tar = __nccwpck_require__(463);
 const Database = __nccwpck_require__(477);
@@ -26891,6 +26895,7 @@ class Grype{
     Eleven.memory();
 
     if(existsSync(files.cache.src)){
+      Grype.#checkFileLock(files.cache.src);
       Eleven.info(`found previous grype database at ${files.cache.src}`);
       try{
         Eleven.debug(`open sqlite database ${files.cache.src} with options:`);
@@ -26902,6 +26907,7 @@ class Grype{
         Eleven.debug(e);
       }      
     }else if(existsSync(files.db)){
+      Grype.#checkFileLock(files.db);
       Eleven.info(`found existing grype database at ${files.db}`);
       try{
         Eleven.debug(`open sqlite database ${files.db} with options:`);
@@ -26953,6 +26959,17 @@ class Grype{
       Eleven.warning('grype database not a valid object');
       Eleven.debug(Grype.database);
     }
+  }
+
+  static #checkFileLock(file){
+    try{
+      closeSync(openSync(file, 'r+'));
+      return(false);
+    }catch(e){
+      Eleven.debug(`file access exception on ${file}:`);
+      Eleven.debug(e);
+    }
+    return(true);
   }
 
   static ref(){

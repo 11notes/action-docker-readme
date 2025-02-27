@@ -56,7 +56,11 @@ class Eleven{
 
   static memory(){
     const memoryUsage = process.memoryUsage();
-    Eleven.debug(`RSS: ${memoryUsage.rss} Heap Total: ${memoryUsage.heapTotal} Heap Used: ${memoryUsage.heapUsed}`);
+    const mb = {};
+    for(const k in memoryUsage){
+      mb[k] = parseFloat(Number(memoryUsage[k]/1024/1024).toFixed(4));
+    }
+    Eleven.debug(mb);
   }
 
   static ref(){

@@ -1,5 +1,5 @@
 const Eleven = require('./Eleven.js');
-const { existsSync, createWriteStream, readFileSync, createReadStream } = require('node:fs');
+const { existsSync, createWriteStream, readFileSync, createReadStream, closeSync, openSync } = require('node:fs');
 const { Readable } = require('node:stream');
 const tar = require('tar');
 const Database = require('better-sqlite3');
@@ -81,6 +81,7 @@ class Grype{
     Eleven.memory();
 
     if(existsSync(files.cache.src)){
+      Grype.#checkFileLock(files.cache.src);
       Eleven.info(`found previous grype database at ${files.cache.src}`);
       try{
         Eleven.debug(`open sqlite database ${files.cache.src} with options:`);
@@ -92,6 +93,7 @@ class Grype{
         Eleven.debug(e);
       }      
     }else if(existsSync(files.db)){
+      Grype.#checkFileLock(files.db);
       Eleven.info(`found existing grype database at ${files.db}`);
       try{
         Eleven.debug(`open sqlite database ${files.db} with options:`);
@@ -143,6 +145,17 @@ class Grype{
       Eleven.warning('grype database not a valid object');
       Eleven.debug(Grype.database);
     }
+  }
+
+  static #checkFileLock(file){
+    try{
+      closeSync(openSync(file, 'r+'));
+      return(false);
+    }catch(e){
+      Eleven.debug(`file access exception on ${file}:`);
+      Eleven.debug(e);
+    }
+    return(true);
   }
 
   static ref(){
