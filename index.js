@@ -6,7 +6,7 @@ const Eleven = require('./src/Eleven.js');
     const readme = new README();
     await readme.init();
   }catch(e){
-    Eleven.warning(e.toString());
+    Eleven.warning(e);
     Eleven.debug(e);
   }
 })();

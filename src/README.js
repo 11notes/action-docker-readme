@@ -61,7 +61,7 @@ module.exports = class README{
       this.#setupEnvironment();
       this.#create();
     }catch(e){
-      Eleven.error(`Exception occured! ${e.toString()}`);
+      Eleven.error(`Exception occured! ${e}`);
       Eleven.debug(e);
     }
   }

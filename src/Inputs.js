@@ -55,7 +55,7 @@ module.exports = class Inputs{
           try{
             log = await run('docker', ['buildx', 'history', 'logs', id]);
           }catch(e){
-            Eleven.warning(`build_output_metadata could not call buildx history logs. Received error: ${e.toString()}`);
+            Eleven.warning(`build_output_metadata could not call buildx history logs.`);
           }
         }catch(e){
           Eleven.warning(`build_output_metadata buildx.build.ref is not set!`);

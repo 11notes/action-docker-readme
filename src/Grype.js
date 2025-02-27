@@ -27,13 +27,13 @@ class Grype{
             query.rows = qNotNull;
           }
         }catch(e){
-          Eleven.warning(`SQLite error occured`);
           Eleven.debug(e);
+          Eleven.warning(`SQLite error occured`);
         }
       }
     }catch(e){
-      Eleven.warning(`SQLite error occured`);
       Eleven.debug(e);
+      Eleven.warning(`SQLite error occured`);
     }
 
     if(query.rows.length > 0){
@@ -84,8 +84,7 @@ class Grype{
 
     Eleven.memory();
 
-    if(existsSync(files.cache.src)){
-      Grype.#checkFileLock(files.cache.src);
+    if(existsSync(files.cache.src) && !Grype.#checkFileLock(files.cache.src)){
       Eleven.info(`found previous grype database at ${files.cache.src}`);
       try{
         Eleven.debug(`open sqlite database ${files.cache.src} with options:`);
@@ -93,11 +92,10 @@ class Grype{
         Grype.database = new Database(files.cache.src, sqliteOptions);
         Eleven.memory();
       }catch(e){
-        Eleven.warning(`sqlite exception ${e.toString()}`);
         Eleven.debug(e);
+        Eleven.warning(`sqlite exception ${e}`);
       }      
-    }else if(existsSync(files.db)){
-      Grype.#checkFileLock(files.db);
+    }else if(existsSync(files.db) && !Grype.#checkFileLock(files.db)){
       Eleven.info(`found existing grype database at ${files.db}`);
       try{
 
@@ -110,13 +108,15 @@ class Grype{
           Eleven.debug(result);
         }catch(e){
           Eleven.debug(e);
+          Eleven.warning(`sqlite exception ${e}`);
         }
 
         Eleven.debug(`open sqlite database ${files.db} with options:`);
         Eleven.debug(sqliteOptions);
         Grype.database = new Database(files.db, sqliteOptions);
       }catch(e){
-        Eleven.warning(`sqlite exception ${e.toString()}`);
+        Eleven.debug(e);
+        Eleven.warning(`sqlite exception ${e}`);
       } 
     }else{
       Eleven.warning(`could not find any grype database, downloading ...`)
@@ -139,12 +139,13 @@ class Grype{
               Eleven.debug(sqliteOptions);
               Grype.database = new Database(files.db, sqliteOptions);
             }catch(e){
-              Eleven.warning(`sqlite exception ${e.toString()}`);
+              Eleven.warning(`sqlite exception ${e}`);
             }
           }
         }
       }catch(e){
-        Eleven.warning(e.toString());
+        Eleven.debug(e);
+        Eleven.warning(e);
       }
     }
 
@@ -155,7 +156,8 @@ class Grype{
           Eleven.info(`using grype database from ${qVersion[0].build_timestamp}`);
         }
       }catch(e){
-        Eleven.warning(e.toString());
+        Eleven.debug(e);
+        Eleven.warning(e);
       }
     }else{
       Eleven.warning('grype database not a valid object');
