@@ -274,10 +274,10 @@ module.exports = class README{
     }
 
     // write file
-    if(!Eleven.debug){
+    if(!existsSync('.development')){
       Eleven.info('writing updated README.md');
       writeFileSync('./README.md', output.markdown);
-    }else{
+    }else if(Eleven.get('debug')){
       Eleven.debug('writing updated debug TREADME.md');
       writeFileSync('./TREADME.md', output.markdown);
     }
