@@ -6,7 +6,7 @@
   "scripts": {
     "build": "ncc build index.js -o dist --license licenses.txt --no-cache --target es2022",
     "dev": "node index.js development",
-    "test": "ncc run index.js"
+    "test": "node dist/index.js --report-uncaught-exception"
   },
   "repository": {
     "type": "git",

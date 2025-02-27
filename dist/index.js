@@ -724,14 +724,6 @@ exports.inspect = Symbol.for('nodejs.util.inspect.custom');
 
 /***/ }),
 
-/***/ 303:
-/***/ ((module) => {
-
-module.exports = eval("require")("./build/Release/better_sqlite3.node");
-
-
-/***/ }),
-
 /***/ 896:
 /***/ ((module) => {
 
@@ -740,11 +732,27 @@ module.exports = require("fs");
 
 /***/ }),
 
+/***/ 24:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:fs");
+
+/***/ }),
+
 /***/ 161:
 /***/ ((module) => {
 
 "use strict";
 module.exports = require("node:os");
+
+/***/ }),
+
+/***/ 760:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:path");
 
 /***/ }),
 
@@ -814,6 +822,8 @@ var __webpack_exports__ = {};
 const Database = __nccwpck_require__(18);
 const { inspect } = __nccwpck_require__(975);
 const os = __nccwpck_require__(161);
+const { existsSync, exists } = __nccwpck_require__(24);
+const { resolve } = __nccwpck_require__(760);
 
 process
   .on('unhandledRejection', (reason, p) => {
@@ -831,19 +841,25 @@ try{
   Eleven.info('starting action-docker-readme');
   readme.init();
   */
-  const sqlite3 = __nccwpck_require__(303);
-  process.stdout.write(inspect(__dirname, {showHidden:false, depth:null, colors:true}) + os.EOL);
-  const opt = {verbose:process.stderr.write, fileMustExist:true, readonly:true, timeout:120*1000, nativeBinding:sqlite3};
-  process.stdout.write(inspect('starting test', {showHidden:false, depth:null, colors:true}) + os.EOL);
-  process.stdout.write(inspect(opt, {showHidden:false, depth:null, colors:true}) + os.EOL);
-  const db = new Database('/home/runner/.cache/grype/db/5/vulnerability.db', opt);
-  process.stdout.write(inspect('db connected', {showHidden:false, depth:null, colors:true}) + os.EOL);
-  const stmt = db.prepare('SELECT * FROM sqlite_master');
-  process.stdout.write(inspect('statement prepared', {showHidden:false, depth:null, colors:true}) + os.EOL);
-  const query = stmt.all();
-  process.stdout.write(inspect(query, {showHidden:false, depth:null, colors:true}) + os.EOL);
+  const addon = resolve(`${__dirname}/build/Release/better_sqlite3.node`);
+  const databasePath = '/home/runner/.cache/grype/db/5/vulnerability.db';
+  process.stdout.write(inspect({addon:addon, databasePath:databasePath}, {showHidden:false, depth:null, colors:true}) + os.EOL);
+  if(existsSync(addon)){
+    const sqlite3 = require(addon);
+    process.stdout.write(inspect({sqlite3:sqlite3}, {showHidden:false, depth:null, colors:true}) + os.EOL);
+    const opt = {verbose:process.stderr.write, fileMustExist:true, readonly:true, timeout:120*1000, nativeBinding:sqlite3};
+    process.stdout.write(inspect({opt:opt}, {showHidden:false, depth:null, colors:true}) + os.EOL);
+    if(existsSync(databasePath)){
+      const db = new Database(databasePath, opt);
+      process.stdout.write(inspect({db:db}, {showHidden:false, depth:null, colors:true}) + os.EOL);
+    }else{
+      throw new Error(`could not find database ${databasePath}`);
+    }
+  }else{
+    throw new Error(`could not find addon ${addon}`);
+  }  
 }catch(e){
-  process.stderr.write(inspect(e, {showHidden:false, depth:null}) + os.EOL);
+  process.stderr.write(inspect({exception:e}, {showHidden:false, depth:null}) + os.EOL);
 }
 module.exports = __webpack_exports__;
 /******/ })()
