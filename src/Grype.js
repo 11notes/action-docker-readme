@@ -88,19 +88,6 @@ class Grype{
       Grype.#checkFileLock(files.cache.src);
       Eleven.info(`found previous grype database at ${files.cache.src}`);
       try{
-
-        try{
-          const sqlitedb = await open({
-            filename: files.cache.src,
-            driver: sqlite3.Database,
-            mode: sqlite3.OPEN_READONLY,
-          })
-          const result = await sqlitedb.get('SELECT * FROM id WHERE schema_version = 5');
-          Eleven.debug(result);
-        }catch(e){
-          Eleven.debug(e);
-        }
-
         Eleven.debug(`open sqlite database ${files.cache.src} with options:`);
         Eleven.debug(sqliteOptions);
         Grype.database = new Database(files.cache.src, sqliteOptions);
