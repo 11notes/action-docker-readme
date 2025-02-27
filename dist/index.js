@@ -845,6 +845,7 @@ try{
   const databasePath = '/home/runner/.cache/grype/db/5/vulnerability.db';
   process.stdout.write(inspect({addon:addon, databasePath:databasePath}, {showHidden:false, depth:null, colors:true}) + os.EOL);
   if(existsSync(addon)){
+    process.stdout.write(inspect(`addon ${addon} exists`, {showHidden:false, depth:null, colors:true}) + os.EOL);
     const sqlite3 = require(addon);
     process.stdout.write(inspect({sqlite3:sqlite3}, {showHidden:false, depth:null, colors:true}) + os.EOL);
     const opt = {verbose:process.stderr.write, fileMustExist:true, readonly:true, timeout:120*1000, nativeBinding:sqlite3};
