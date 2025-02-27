@@ -18,13 +18,14 @@ try{
   Eleven.info('starting action-docker-readme');
   readme.init();
   */
+  const sqlite3 = require('./build/Release/better_sqlite3.node');
   process.stdout.write(inspect(__dirname, {showHidden:false, depth:null, colors:true}) + os.EOL);
-  const opt = {verbose:process.stderr.write, readonly:true, timeout:120*1000, nativeBinding:'./build/Release/better_sqlite3.node'};
+  const opt = {verbose:process.stderr.write, fileMustExist:true, readonly:true, timeout:120*1000, nativeBinding:sqlite3};
   process.stdout.write(inspect('starting test', {showHidden:false, depth:null, colors:true}) + os.EOL);
   process.stdout.write(inspect(opt, {showHidden:false, depth:null, colors:true}) + os.EOL);
   const db = new Database('/home/runner/.cache/grype/db/5/vulnerability.db', opt);
   process.stdout.write(inspect('db connected', {showHidden:false, depth:null, colors:true}) + os.EOL);
-  const stmt = db.prepare('SELECT * FROM id WHERE schema_version = 5');
+  const stmt = db.prepare('SELECT * FROM sqlite_master');
   process.stdout.write(inspect('statement prepared', {showHidden:false, depth:null, colors:true}) + os.EOL);
   const query = stmt.all();
   process.stdout.write(inspect(query, {showHidden:false, depth:null, colors:true}) + os.EOL);
