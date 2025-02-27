@@ -30,7 +30,7 @@ class Eleven{
 
   static debug(){
     if(Eleven.#debug){
-      core.info.apply(Eleven, [inspect.apply(Eleven, arguments)]);
+      core.info.apply(Eleven, [inspect.apply(Eleven, arguments).slice(1,-1)]);
     }
   }
 

@@ -26750,7 +26750,7 @@ class Eleven{
 
   static debug(){
     if(Eleven.#debug){
-      core.info.apply(Eleven, [inspect.apply(Eleven, arguments)]);
+      core.info.apply(Eleven, [inspect.apply(Eleven, arguments).slice(1,-1)]);
     }
   }
 
@@ -36845,9 +36845,11 @@ exports.Node = Node;
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-const README = __nccwpck_require__(569);
-new README()
-  .init();
+(async()=>{
+  const README = __nccwpck_require__(569);
+  const readme = new README();
+  await readme.init();
+})();
 module.exports = __webpack_exports__;
 /******/ })()
 ;
