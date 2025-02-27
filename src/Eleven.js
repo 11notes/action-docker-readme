@@ -41,7 +41,11 @@ class Eleven{
   }
 
   static warning(){
-    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}   ${arguments[0]}`;
+    if(arguments.length > 0 && typeof(arguments[0]) === 'string'){
+      arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}   ${arguments[0]}`;
+    }else{
+      Eleven.debug.apply(Eleven, arguments);
+    }
     core.warning.apply(Eleven, arguments);
   }
 

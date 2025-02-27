@@ -27028,7 +27028,11 @@ class Eleven{
   }
 
   static warning(){
-    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}   ${arguments[0]}`;
+    if(arguments.length > 0 && typeof(arguments[0]) === 'string'){
+      arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}   ${arguments[0]}`;
+    }else{
+      Eleven.debug.apply(Eleven, arguments);
+    }
     core.warning.apply(Eleven, arguments);
   }
 
@@ -27108,12 +27112,12 @@ class Grype{
             query.rows = qNotNull;
           }
         }catch(e){
-          Eleven.debug(e);
+          
           Eleven.warning(`SQLite error occured`);
         }
       }
     }catch(e){
-      Eleven.debug(e);
+      
       Eleven.warning(`SQLite error occured`);
     }
 
@@ -27173,8 +27177,8 @@ class Grype{
         Grype.database = new Database(files.cache.src, sqliteOptions);
         Eleven.memory();
       }catch(e){
-        Eleven.debug(e);
-        Eleven.warning(`sqlite exception ${e}`);
+        
+        Eleven.warning(e);
       }      
     }else if(existsSync(files.db) && !Grype.#checkFileLock(files.db)){
       Eleven.info(`found existing grype database at ${files.db}`);
@@ -27188,16 +27192,14 @@ class Grype{
           const result = await sqlitedb.get('SELECT * FROM id WHERE schema_version = 5');
           Eleven.debug(result);
         }catch(e){
-          Eleven.debug(e);
-          Eleven.warning(`sqlite exception ${e}`);
+          Eleven.warning(e);
         }
 
         Eleven.debug(`open sqlite database ${files.db} with options:`);
         Eleven.debug(sqliteOptions);
         Grype.database = new Database(files.db, sqliteOptions);
       }catch(e){
-        Eleven.debug(e);
-        Eleven.warning(`sqlite exception ${e}`);
+        Eleven.warning(e);
       } 
     }else{
       Eleven.warning(`could not find any grype database, downloading ...`)
@@ -27220,12 +27222,11 @@ class Grype{
               Eleven.debug(sqliteOptions);
               Grype.database = new Database(files.db, sqliteOptions);
             }catch(e){
-              Eleven.warning(`sqlite exception ${e}`);
+              Eleven.warning(e);
             }
           }
         }
       }catch(e){
-        Eleven.debug(e);
         Eleven.warning(e);
       }
     }
@@ -27237,12 +27238,10 @@ class Grype{
           Eleven.info(`using grype database from ${qVersion[0].build_timestamp}`);
         }
       }catch(e){
-        Eleven.debug(e);
         Eleven.warning(e);
       }
     }else{
       Eleven.warning('grype database not a valid object');
-      Eleven.debug(Grype.database);
     }
   }
 
@@ -27251,8 +27250,7 @@ class Grype{
       closeSync(openSync(file, 'r+'));
       return(false);
     }catch(e){
-      Eleven.debug(`file access exception on ${file}:`);
-      Eleven.debug(e);
+      Eleven.warning(e);
     }
     return(true);
   }
@@ -27409,9 +27407,8 @@ module.exports = class README{
         }
       }
 
-      await Grype.init();
       this.#loadImageFiles();
-      this.#setupEnvironment();
+      await this.#setupEnvironment();
       this.#create();
     }catch(e){
       Eleven.error(`Exception occured! ${e}`);
@@ -27452,7 +27449,13 @@ module.exports = class README{
     });
   }
 
-  #setupEnvironment(){
+  async #setupEnvironment(){
+
+    try{
+      await Grype.init();
+    }catch(e){
+      Eleven.warning(e);
+    }
 
     if(this.#json?.readme?.grype?.severity > 0){
       Grype.cutoff = this.#json.readme.grype.severity;

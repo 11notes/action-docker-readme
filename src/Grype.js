@@ -27,12 +27,11 @@ class Grype{
             query.rows = qNotNull;
           }
         }catch(e){
-          Eleven.debug(e);
           Eleven.warning(`SQLite error occured`);
         }
       }
     }catch(e){
-      Eleven.debug(e);
+      
       Eleven.warning(`SQLite error occured`);
     }
 
@@ -92,8 +91,8 @@ class Grype{
         Grype.database = new Database(files.cache.src, sqliteOptions);
         Eleven.memory();
       }catch(e){
-        Eleven.debug(e);
-        Eleven.warning(`sqlite exception ${e}`);
+        
+        Eleven.warning(e);
       }      
     }else if(existsSync(files.db) && !Grype.#checkFileLock(files.db)){
       Eleven.info(`found existing grype database at ${files.db}`);
@@ -107,16 +106,14 @@ class Grype{
           const result = await sqlitedb.get('SELECT * FROM id WHERE schema_version = 5');
           Eleven.debug(result);
         }catch(e){
-          Eleven.debug(e);
-          Eleven.warning(`sqlite exception ${e}`);
+          Eleven.warning(e);
         }
 
         Eleven.debug(`open sqlite database ${files.db} with options:`);
         Eleven.debug(sqliteOptions);
         Grype.database = new Database(files.db, sqliteOptions);
       }catch(e){
-        Eleven.debug(e);
-        Eleven.warning(`sqlite exception ${e}`);
+        Eleven.warning(e);
       } 
     }else{
       Eleven.warning(`could not find any grype database, downloading ...`)
@@ -139,12 +136,11 @@ class Grype{
               Eleven.debug(sqliteOptions);
               Grype.database = new Database(files.db, sqliteOptions);
             }catch(e){
-              Eleven.warning(`sqlite exception ${e}`);
+              Eleven.warning(e);
             }
           }
         }
       }catch(e){
-        Eleven.debug(e);
         Eleven.warning(e);
       }
     }
@@ -156,12 +152,10 @@ class Grype{
           Eleven.info(`using grype database from ${qVersion[0].build_timestamp}`);
         }
       }catch(e){
-        Eleven.debug(e);
         Eleven.warning(e);
       }
     }else{
       Eleven.warning('grype database not a valid object');
-      Eleven.debug(Grype.database);
     }
   }
 
@@ -170,8 +164,7 @@ class Grype{
       closeSync(openSync(file, 'r+'));
       return(false);
     }catch(e){
-      Eleven.debug(`file access exception on ${file}:`);
-      Eleven.debug(e);
+      Eleven.warning(e);
     }
     return(true);
   }

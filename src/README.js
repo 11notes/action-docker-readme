@@ -56,9 +56,8 @@ module.exports = class README{
         }
       }
 
-      await Grype.init();
       this.#loadImageFiles();
-      this.#setupEnvironment();
+      await this.#setupEnvironment();
       this.#create();
     }catch(e){
       Eleven.error(`Exception occured! ${e}`);
@@ -99,7 +98,13 @@ module.exports = class README{
     });
   }
 
-  #setupEnvironment(){
+  async #setupEnvironment(){
+
+    try{
+      await Grype.init();
+    }catch(e){
+      Eleven.warning(e);
+    }
 
     if(this.#json?.readme?.grype?.severity > 0){
       Grype.cutoff = this.#json.readme.grype.severity;
