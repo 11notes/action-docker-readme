@@ -1,5 +1,6 @@
 const Eleven = require('./Eleven.js');
 const { existsSync, createWriteStream, readFileSync, createReadStream } = require('node:fs');
+const { resolve } = require('node:path');
 const { Readable } = require('node:stream');
 const tar = require('tar');
 const sqlite3 = require('better-sqlite3');
@@ -14,11 +15,21 @@ class Grype{
       rows:[],
     };
     
-    const qDefault = Grype.database.prepare(`SELECT DISTINCT cvss FROM vulnerability_metadata WHERE data_source = 'https://nvd.nist.gov/vuln/detail/${ID}' AND json_extract(cvss, '$[0]') NOT NULL`).all();
+    try{
+      const qDefault = Grype.database.prepare(`SELECT DISTINCT cvss FROM vulnerability_metadata WHERE data_source = 'https://nvd.nist.gov/vuln/detail/${ID}' AND json_extract(cvss, '$[0]') NOT NULL`).all();
+    }catch(e){
+      Eleven.warning(`SQLite error occured`);
+      Eleven.debug(e);
+    }
     if(qDefault && Array.isArray(qDefault) && qDefault.length > 0){
       query.rows = qDefault;
     }else{
-      const qNotNull = Grype.database.prepare(`SELECT DISTINCT cvss FROM vulnerability_metadata WHERE id = '${ID}' AND json_extract(cvss, '$[0]') NOT NULL`).all();
+      try{
+        const qNotNull = Grype.database.prepare(`SELECT DISTINCT cvss FROM vulnerability_metadata WHERE id = '${ID}' AND json_extract(cvss, '$[0]') NOT NULL`).all();
+      }catch(e){
+        Eleven.warning(`SQLite error occured`);
+        Eleven.debug(e);
+      }
       if(qNotNull && Array.isArray(qNotNull) && qNotNull.length > 0){
         query.rows = qNotNull;
       }
@@ -67,6 +78,9 @@ class Grype{
 
     const sqliteOptions = {
       readonly:true,
+      fileMustExist:true,
+      nativeBinding:resolve(`${__dirname}/build/Release/better_sqlite3.node`),
+      timeout:30*1000,
     };
 
     if(Eleven.get('debug')){
