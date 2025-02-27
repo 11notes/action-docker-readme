@@ -3195,6 +3195,729 @@ function copyFile(srcFile, destFile, force) {
 
 /***/ }),
 
+/***/ 7065:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const fs = __nccwpck_require__(9896);
+const path = __nccwpck_require__(6928);
+const util = __nccwpck_require__(2284);
+const SqliteError = __nccwpck_require__(1767);
+
+let DEFAULT_ADDON;
+
+function Database(filenameGiven, options) {
+	if (new.target == null) {
+		return new Database(filenameGiven, options);
+	}
+
+	// Apply defaults
+	let buffer;
+	if (Buffer.isBuffer(filenameGiven)) {
+		buffer = filenameGiven;
+		filenameGiven = ':memory:';
+	}
+	if (filenameGiven == null) filenameGiven = '';
+	if (options == null) options = {};
+
+	// Validate arguments
+	if (typeof filenameGiven !== 'string') throw new TypeError('Expected first argument to be a string');
+	if (typeof options !== 'object') throw new TypeError('Expected second argument to be an options object');
+	if ('readOnly' in options) throw new TypeError('Misspelled option "readOnly" should be "readonly"');
+	if ('memory' in options) throw new TypeError('Option "memory" was removed in v7.0.0 (use ":memory:" filename instead)');
+
+	// Interpret options
+	const filename = filenameGiven.trim();
+	const anonymous = filename === '' || filename === ':memory:';
+	const readonly = util.getBooleanOption(options, 'readonly');
+	const fileMustExist = util.getBooleanOption(options, 'fileMustExist');
+	const timeout = 'timeout' in options ? options.timeout : 5000;
+	const verbose = 'verbose' in options ? options.verbose : null;
+	const nativeBinding = 'nativeBinding' in options ? options.nativeBinding : null;
+
+	// Validate interpreted options
+	if (readonly && anonymous && !buffer) throw new TypeError('In-memory/temporary databases cannot be readonly');
+	if (!Number.isInteger(timeout) || timeout < 0) throw new TypeError('Expected the "timeout" option to be a positive integer');
+	if (timeout > 0x7fffffff) throw new RangeError('Option "timeout" cannot be greater than 2147483647');
+	if (verbose != null && typeof verbose !== 'function') throw new TypeError('Expected the "verbose" option to be a function');
+	if (nativeBinding != null && typeof nativeBinding !== 'string' && typeof nativeBinding !== 'object') throw new TypeError('Expected the "nativeBinding" option to be a string or addon object');
+
+	// Load the native addon
+	let addon;
+	if (nativeBinding == null) {
+		addon = DEFAULT_ADDON || (DEFAULT_ADDON = require(__nccwpck_require__.ab + "build/Release/better_sqlite3.node"));
+	} else if (typeof nativeBinding === 'string') {
+		// See <https://webpack.js.org/api/module-variables/#__non_webpack_require__-webpack-specific>
+		const requireFunc = typeof require === 'function' ? eval("require") : require;
+		addon = requireFunc(path.resolve(nativeBinding).replace(/(\.node)?$/, '.node'));
+	} else {
+		// See <https://github.com/WiseLibs/better-sqlite3/issues/972>
+		addon = nativeBinding;
+	}
+
+	if (!addon.isInitialized) {
+		addon.setErrorConstructor(SqliteError);
+		addon.isInitialized = true;
+	}
+
+	// Make sure the specified directory exists
+	if (!anonymous && !fs.existsSync(path.dirname(filename))) {
+		throw new TypeError('Cannot open database because the directory does not exist');
+	}
+
+	Object.defineProperties(this, {
+		[util.cppdb]: { value: new addon.Database(filename, filenameGiven, anonymous, readonly, fileMustExist, timeout, verbose || null, buffer || null) },
+		...wrappers.getters,
+	});
+}
+
+const wrappers = __nccwpck_require__(8643);
+Database.prototype.prepare = wrappers.prepare;
+Database.prototype.transaction = __nccwpck_require__(6275);
+Database.prototype.pragma = __nccwpck_require__(8747);
+Database.prototype.backup = __nccwpck_require__(2693);
+Database.prototype.serialize = __nccwpck_require__(4573);
+Database.prototype.function = __nccwpck_require__(4387);
+Database.prototype.aggregate = __nccwpck_require__(5204);
+Database.prototype.table = __nccwpck_require__(7207);
+Database.prototype.loadExtension = wrappers.loadExtension;
+Database.prototype.exec = wrappers.exec;
+Database.prototype.close = wrappers.close;
+Database.prototype.defaultSafeIntegers = wrappers.defaultSafeIntegers;
+Database.prototype.unsafeMode = wrappers.unsafeMode;
+Database.prototype[util.inspect] = __nccwpck_require__(6887);
+
+module.exports = Database;
+
+
+/***/ }),
+
+/***/ 18:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+module.exports = __nccwpck_require__(7065);
+module.exports.SqliteError = __nccwpck_require__(1767);
+
+
+/***/ }),
+
+/***/ 5204:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const { getBooleanOption, cppdb } = __nccwpck_require__(2284);
+
+module.exports = function defineAggregate(name, options) {
+	// Validate arguments
+	if (typeof name !== 'string') throw new TypeError('Expected first argument to be a string');
+	if (typeof options !== 'object' || options === null) throw new TypeError('Expected second argument to be an options object');
+	if (!name) throw new TypeError('User-defined function name cannot be an empty string');
+
+	// Interpret options
+	const start = 'start' in options ? options.start : null;
+	const step = getFunctionOption(options, 'step', true);
+	const inverse = getFunctionOption(options, 'inverse', false);
+	const result = getFunctionOption(options, 'result', false);
+	const safeIntegers = 'safeIntegers' in options ? +getBooleanOption(options, 'safeIntegers') : 2;
+	const deterministic = getBooleanOption(options, 'deterministic');
+	const directOnly = getBooleanOption(options, 'directOnly');
+	const varargs = getBooleanOption(options, 'varargs');
+	let argCount = -1;
+
+	// Determine argument count
+	if (!varargs) {
+		argCount = Math.max(getLength(step), inverse ? getLength(inverse) : 0);
+		if (argCount > 0) argCount -= 1;
+		if (argCount > 100) throw new RangeError('User-defined functions cannot have more than 100 arguments');
+	}
+
+	this[cppdb].aggregate(start, step, inverse, result, name, argCount, safeIntegers, deterministic, directOnly);
+	return this;
+};
+
+const getFunctionOption = (options, key, required) => {
+	const value = key in options ? options[key] : null;
+	if (typeof value === 'function') return value;
+	if (value != null) throw new TypeError(`Expected the "${key}" option to be a function`);
+	if (required) throw new TypeError(`Missing required option "${key}"`);
+	return null;
+};
+
+const getLength = ({ length }) => {
+	if (Number.isInteger(length) && length >= 0) return length;
+	throw new TypeError('Expected function.length to be a positive integer');
+};
+
+
+/***/ }),
+
+/***/ 2693:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const fs = __nccwpck_require__(9896);
+const path = __nccwpck_require__(6928);
+const { promisify } = __nccwpck_require__(9023);
+const { cppdb } = __nccwpck_require__(2284);
+const fsAccess = promisify(fs.access);
+
+module.exports = async function backup(filename, options) {
+	if (options == null) options = {};
+
+	// Validate arguments
+	if (typeof filename !== 'string') throw new TypeError('Expected first argument to be a string');
+	if (typeof options !== 'object') throw new TypeError('Expected second argument to be an options object');
+
+	// Interpret options
+	filename = filename.trim();
+	const attachedName = 'attached' in options ? options.attached : 'main';
+	const handler = 'progress' in options ? options.progress : null;
+
+	// Validate interpreted options
+	if (!filename) throw new TypeError('Backup filename cannot be an empty string');
+	if (filename === ':memory:') throw new TypeError('Invalid backup filename ":memory:"');
+	if (typeof attachedName !== 'string') throw new TypeError('Expected the "attached" option to be a string');
+	if (!attachedName) throw new TypeError('The "attached" option cannot be an empty string');
+	if (handler != null && typeof handler !== 'function') throw new TypeError('Expected the "progress" option to be a function');
+
+	// Make sure the specified directory exists
+	await fsAccess(path.dirname(filename)).catch(() => {
+		throw new TypeError('Cannot save backup because the directory does not exist');
+	});
+
+	const isNewFile = await fsAccess(filename).then(() => false, () => true);
+	return runBackup(this[cppdb].backup(this, attachedName, filename, isNewFile), handler || null);
+};
+
+const runBackup = (backup, handler) => {
+	let rate = 0;
+	let useDefault = true;
+
+	return new Promise((resolve, reject) => {
+		setImmediate(function step() {
+			try {
+				const progress = backup.transfer(rate);
+				if (!progress.remainingPages) {
+					backup.close();
+					resolve(progress);
+					return;
+				}
+				if (useDefault) {
+					useDefault = false;
+					rate = 100;
+				}
+				if (handler) {
+					const ret = handler(progress);
+					if (ret !== undefined) {
+						if (typeof ret === 'number' && ret === ret) rate = Math.max(0, Math.min(0x7fffffff, Math.round(ret)));
+						else throw new TypeError('Expected progress callback to return a number or undefined');
+					}
+				}
+				setImmediate(step);
+			} catch (err) {
+				backup.close();
+				reject(err);
+			}
+		});
+	});
+};
+
+
+/***/ }),
+
+/***/ 4387:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const { getBooleanOption, cppdb } = __nccwpck_require__(2284);
+
+module.exports = function defineFunction(name, options, fn) {
+	// Apply defaults
+	if (options == null) options = {};
+	if (typeof options === 'function') { fn = options; options = {}; }
+
+	// Validate arguments
+	if (typeof name !== 'string') throw new TypeError('Expected first argument to be a string');
+	if (typeof fn !== 'function') throw new TypeError('Expected last argument to be a function');
+	if (typeof options !== 'object') throw new TypeError('Expected second argument to be an options object');
+	if (!name) throw new TypeError('User-defined function name cannot be an empty string');
+
+	// Interpret options
+	const safeIntegers = 'safeIntegers' in options ? +getBooleanOption(options, 'safeIntegers') : 2;
+	const deterministic = getBooleanOption(options, 'deterministic');
+	const directOnly = getBooleanOption(options, 'directOnly');
+	const varargs = getBooleanOption(options, 'varargs');
+	let argCount = -1;
+
+	// Determine argument count
+	if (!varargs) {
+		argCount = fn.length;
+		if (!Number.isInteger(argCount) || argCount < 0) throw new TypeError('Expected function.length to be a positive integer');
+		if (argCount > 100) throw new RangeError('User-defined functions cannot have more than 100 arguments');
+	}
+
+	this[cppdb].function(fn, name, argCount, safeIntegers, deterministic, directOnly);
+	return this;
+};
+
+
+/***/ }),
+
+/***/ 6887:
+/***/ ((module) => {
+
+"use strict";
+
+const DatabaseInspection = function Database() {};
+
+module.exports = function inspect(depth, opts) {
+	return Object.assign(new DatabaseInspection(), this);
+};
+
+
+
+/***/ }),
+
+/***/ 8747:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const { getBooleanOption, cppdb } = __nccwpck_require__(2284);
+
+module.exports = function pragma(source, options) {
+	if (options == null) options = {};
+	if (typeof source !== 'string') throw new TypeError('Expected first argument to be a string');
+	if (typeof options !== 'object') throw new TypeError('Expected second argument to be an options object');
+	const simple = getBooleanOption(options, 'simple');
+
+	const stmt = this[cppdb].prepare(`PRAGMA ${source}`, this, true);
+	return simple ? stmt.pluck().get() : stmt.all();
+};
+
+
+/***/ }),
+
+/***/ 4573:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const { cppdb } = __nccwpck_require__(2284);
+
+module.exports = function serialize(options) {
+	if (options == null) options = {};
+
+	// Validate arguments
+	if (typeof options !== 'object') throw new TypeError('Expected first argument to be an options object');
+
+	// Interpret and validate options
+	const attachedName = 'attached' in options ? options.attached : 'main';
+	if (typeof attachedName !== 'string') throw new TypeError('Expected the "attached" option to be a string');
+	if (!attachedName) throw new TypeError('The "attached" option cannot be an empty string');
+
+	return this[cppdb].serialize(attachedName);
+};
+
+
+/***/ }),
+
+/***/ 7207:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const { cppdb } = __nccwpck_require__(2284);
+
+module.exports = function defineTable(name, factory) {
+	// Validate arguments
+	if (typeof name !== 'string') throw new TypeError('Expected first argument to be a string');
+	if (!name) throw new TypeError('Virtual table module name cannot be an empty string');
+
+	// Determine whether the module is eponymous-only or not
+	let eponymous = false;
+	if (typeof factory === 'object' && factory !== null) {
+		eponymous = true;
+		factory = defer(parseTableDefinition(factory, 'used', name));
+	} else {
+		if (typeof factory !== 'function') throw new TypeError('Expected second argument to be a function or a table definition object');
+		factory = wrapFactory(factory);
+	}
+
+	this[cppdb].table(factory, name, eponymous);
+	return this;
+};
+
+function wrapFactory(factory) {
+	return function virtualTableFactory(moduleName, databaseName, tableName, ...args) {
+		const thisObject = {
+			module: moduleName,
+			database: databaseName,
+			table: tableName,
+		};
+
+		// Generate a new table definition by invoking the factory
+		const def = apply.call(factory, thisObject, args);
+		if (typeof def !== 'object' || def === null) {
+			throw new TypeError(`Virtual table module "${moduleName}" did not return a table definition object`);
+		}
+
+		return parseTableDefinition(def, 'returned', moduleName);
+	};
+}
+
+function parseTableDefinition(def, verb, moduleName) {
+	// Validate required properties
+	if (!hasOwnProperty.call(def, 'rows')) {
+		throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition without a "rows" property`);
+	}
+	if (!hasOwnProperty.call(def, 'columns')) {
+		throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition without a "columns" property`);
+	}
+
+	// Validate "rows" property
+	const rows = def.rows;
+	if (typeof rows !== 'function' || Object.getPrototypeOf(rows) !== GeneratorFunctionPrototype) {
+		throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with an invalid "rows" property (should be a generator function)`);
+	}
+
+	// Validate "columns" property
+	let columns = def.columns;
+	if (!Array.isArray(columns) || !(columns = [...columns]).every(x => typeof x === 'string')) {
+		throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with an invalid "columns" property (should be an array of strings)`);
+	}
+	if (columns.length !== new Set(columns).size) {
+		throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with duplicate column names`);
+	}
+	if (!columns.length) {
+		throw new RangeError(`Virtual table module "${moduleName}" ${verb} a table definition with zero columns`);
+	}
+
+	// Validate "parameters" property
+	let parameters;
+	if (hasOwnProperty.call(def, 'parameters')) {
+		parameters = def.parameters;
+		if (!Array.isArray(parameters) || !(parameters = [...parameters]).every(x => typeof x === 'string')) {
+			throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with an invalid "parameters" property (should be an array of strings)`);
+		}
+	} else {
+		parameters = inferParameters(rows);
+	}
+	if (parameters.length !== new Set(parameters).size) {
+		throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with duplicate parameter names`);
+	}
+	if (parameters.length > 32) {
+		throw new RangeError(`Virtual table module "${moduleName}" ${verb} a table definition with more than the maximum number of 32 parameters`);
+	}
+	for (const parameter of parameters) {
+		if (columns.includes(parameter)) {
+			throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with column "${parameter}" which was ambiguously defined as both a column and parameter`);
+		}
+	}
+
+	// Validate "safeIntegers" option
+	let safeIntegers = 2;
+	if (hasOwnProperty.call(def, 'safeIntegers')) {
+		const bool = def.safeIntegers;
+		if (typeof bool !== 'boolean') {
+			throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with an invalid "safeIntegers" property (should be a boolean)`);
+		}
+		safeIntegers = +bool;
+	}
+
+	// Validate "directOnly" option
+	let directOnly = false;
+	if (hasOwnProperty.call(def, 'directOnly')) {
+		directOnly = def.directOnly;
+		if (typeof directOnly !== 'boolean') {
+			throw new TypeError(`Virtual table module "${moduleName}" ${verb} a table definition with an invalid "directOnly" property (should be a boolean)`);
+		}
+	}
+
+	// Generate SQL for the virtual table definition
+	const columnDefinitions = [
+		...parameters.map(identifier).map(str => `${str} HIDDEN`),
+		...columns.map(identifier),
+	];
+	return [
+		`CREATE TABLE x(${columnDefinitions.join(', ')});`,
+		wrapGenerator(rows, new Map(columns.map((x, i) => [x, parameters.length + i])), moduleName),
+		parameters,
+		safeIntegers,
+		directOnly,
+	];
+}
+
+function wrapGenerator(generator, columnMap, moduleName) {
+	return function* virtualTable(...args) {
+		/*
+			We must defensively clone any buffers in the arguments, because
+			otherwise the generator could mutate one of them, which would cause
+			us to return incorrect values for hidden columns, potentially
+			corrupting the database.
+		 */
+		const output = args.map(x => Buffer.isBuffer(x) ? Buffer.from(x) : x);
+		for (let i = 0; i < columnMap.size; ++i) {
+			output.push(null); // Fill with nulls to prevent gaps in array (v8 optimization)
+		}
+		for (const row of generator(...args)) {
+			if (Array.isArray(row)) {
+				extractRowArray(row, output, columnMap.size, moduleName);
+				yield output;
+			} else if (typeof row === 'object' && row !== null) {
+				extractRowObject(row, output, columnMap, moduleName);
+				yield output;
+			} else {
+				throw new TypeError(`Virtual table module "${moduleName}" yielded something that isn't a valid row object`);
+			}
+		}
+	};
+}
+
+function extractRowArray(row, output, columnCount, moduleName) {
+	if (row.length !== columnCount) {
+		throw new TypeError(`Virtual table module "${moduleName}" yielded a row with an incorrect number of columns`);
+	}
+	const offset = output.length - columnCount;
+	for (let i = 0; i < columnCount; ++i) {
+		output[i + offset] = row[i];
+	}
+}
+
+function extractRowObject(row, output, columnMap, moduleName) {
+	let count = 0;
+	for (const key of Object.keys(row)) {
+		const index = columnMap.get(key);
+		if (index === undefined) {
+			throw new TypeError(`Virtual table module "${moduleName}" yielded a row with an undeclared column "${key}"`);
+		}
+		output[index] = row[key];
+		count += 1;
+	}
+	if (count !== columnMap.size) {
+		throw new TypeError(`Virtual table module "${moduleName}" yielded a row with missing columns`);
+	}
+}
+
+function inferParameters({ length }) {
+	if (!Number.isInteger(length) || length < 0) {
+		throw new TypeError('Expected function.length to be a positive integer');
+	}
+	const params = [];
+	for (let i = 0; i < length; ++i) {
+		params.push(`$${i + 1}`);
+	}
+	return params;
+}
+
+const { hasOwnProperty } = Object.prototype;
+const { apply } = Function.prototype;
+const GeneratorFunctionPrototype = Object.getPrototypeOf(function*(){});
+const identifier = str => `"${str.replace(/"/g, '""')}"`;
+const defer = x => () => x;
+
+
+/***/ }),
+
+/***/ 6275:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const { cppdb } = __nccwpck_require__(2284);
+const controllers = new WeakMap();
+
+module.exports = function transaction(fn) {
+	if (typeof fn !== 'function') throw new TypeError('Expected first argument to be a function');
+
+	const db = this[cppdb];
+	const controller = getController(db, this);
+	const { apply } = Function.prototype;
+
+	// Each version of the transaction function has these same properties
+	const properties = {
+		default: { value: wrapTransaction(apply, fn, db, controller.default) },
+		deferred: { value: wrapTransaction(apply, fn, db, controller.deferred) },
+		immediate: { value: wrapTransaction(apply, fn, db, controller.immediate) },
+		exclusive: { value: wrapTransaction(apply, fn, db, controller.exclusive) },
+		database: { value: this, enumerable: true },
+	};
+
+	Object.defineProperties(properties.default.value, properties);
+	Object.defineProperties(properties.deferred.value, properties);
+	Object.defineProperties(properties.immediate.value, properties);
+	Object.defineProperties(properties.exclusive.value, properties);
+
+	// Return the default version of the transaction function
+	return properties.default.value;
+};
+
+// Return the database's cached transaction controller, or create a new one
+const getController = (db, self) => {
+	let controller = controllers.get(db);
+	if (!controller) {
+		const shared = {
+			commit: db.prepare('COMMIT', self, false),
+			rollback: db.prepare('ROLLBACK', self, false),
+			savepoint: db.prepare('SAVEPOINT `\t_bs3.\t`', self, false),
+			release: db.prepare('RELEASE `\t_bs3.\t`', self, false),
+			rollbackTo: db.prepare('ROLLBACK TO `\t_bs3.\t`', self, false),
+		};
+		controllers.set(db, controller = {
+			default: Object.assign({ begin: db.prepare('BEGIN', self, false) }, shared),
+			deferred: Object.assign({ begin: db.prepare('BEGIN DEFERRED', self, false) }, shared),
+			immediate: Object.assign({ begin: db.prepare('BEGIN IMMEDIATE', self, false) }, shared),
+			exclusive: Object.assign({ begin: db.prepare('BEGIN EXCLUSIVE', self, false) }, shared),
+		});
+	}
+	return controller;
+};
+
+// Return a new transaction function by wrapping the given function
+const wrapTransaction = (apply, fn, db, { begin, commit, rollback, savepoint, release, rollbackTo }) => function sqliteTransaction() {
+	let before, after, undo;
+	if (db.inTransaction) {
+		before = savepoint;
+		after = release;
+		undo = rollbackTo;
+	} else {
+		before = begin;
+		after = commit;
+		undo = rollback;
+	}
+	before.run();
+	try {
+		const result = apply.call(fn, this, arguments);
+		after.run();
+		return result;
+	} catch (ex) {
+		if (db.inTransaction) {
+			undo.run();
+			if (undo !== rollback) after.run();
+		}
+		throw ex;
+	}
+};
+
+
+/***/ }),
+
+/***/ 8643:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+const { cppdb } = __nccwpck_require__(2284);
+
+exports.prepare = function prepare(sql) {
+	return this[cppdb].prepare(sql, this, false);
+};
+
+exports.exec = function exec(sql) {
+	this[cppdb].exec(sql);
+	return this;
+};
+
+exports.close = function close() {
+	this[cppdb].close();
+	return this;
+};
+
+exports.loadExtension = function loadExtension(...args) {
+	this[cppdb].loadExtension(...args);
+	return this;
+};
+
+exports.defaultSafeIntegers = function defaultSafeIntegers(...args) {
+	this[cppdb].defaultSafeIntegers(...args);
+	return this;
+};
+
+exports.unsafeMode = function unsafeMode(...args) {
+	this[cppdb].unsafeMode(...args);
+	return this;
+};
+
+exports.getters = {
+	name: {
+		get: function name() { return this[cppdb].name; },
+		enumerable: true,
+	},
+	open: {
+		get: function open() { return this[cppdb].open; },
+		enumerable: true,
+	},
+	inTransaction: {
+		get: function inTransaction() { return this[cppdb].inTransaction; },
+		enumerable: true,
+	},
+	readonly: {
+		get: function readonly() { return this[cppdb].readonly; },
+		enumerable: true,
+	},
+	memory: {
+		get: function memory() { return this[cppdb].memory; },
+		enumerable: true,
+	},
+};
+
+
+/***/ }),
+
+/***/ 1767:
+/***/ ((module) => {
+
+"use strict";
+
+const descriptor = { value: 'SqliteError', writable: true, enumerable: false, configurable: true };
+
+function SqliteError(message, code) {
+	if (new.target !== SqliteError) {
+		return new SqliteError(message, code);
+	}
+	if (typeof code !== 'string') {
+		throw new TypeError('Expected second argument to be a string');
+	}
+	Error.call(this, message);
+	descriptor.value = '' + message;
+	Object.defineProperty(this, 'message', descriptor);
+	Error.captureStackTrace(this, SqliteError);
+	this.code = code;
+}
+Object.setPrototypeOf(SqliteError, Error);
+Object.setPrototypeOf(SqliteError.prototype, Error.prototype);
+Object.defineProperty(SqliteError.prototype, 'name', descriptor);
+module.exports = SqliteError;
+
+
+/***/ }),
+
+/***/ 2284:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+
+exports.getBooleanOption = (options, key) => {
+	let value = false;
+	if (key in options && typeof (value = options[key]) !== 'boolean') {
+		throw new TypeError(`Expected the "${key}" option to be a boolean`);
+	}
+	return value;
+};
+
+exports.cppdb = Symbol();
+exports.inspect = Symbol.for('nodejs.util.inspect.custom');
+
+
+/***/ }),
+
 /***/ 1998:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -25741,567 +26464,6 @@ module.exports = Eleven.ref();
 
 /***/ }),
 
-/***/ 2376:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const Eleven = __nccwpck_require__(7248);
-const { resolve } = __nccwpck_require__(6760);
-const { existsSync, readFileSync } = __nccwpck_require__(3024);
-const run = __nccwpck_require__(1444);
-
-module.exports = class Inputs{
-  static async sarif_file(file){
-    // will return all valid CVE IDs if any are present
-    Eleven.debug(`sarif_file(${file})`);
-
-    const CVEs = [];
-
-    if(existsSync(resolve(file))){
-      try{
-        const sarif = JSON.parse(readFileSync(file, 'utf-8'));
-        try{
-          if(/grype/i.test(sarif.runs[0]?.tool?.driver?.name)){
-            for(const rules of sarif.runs[0].tool.driver?.rules){
-              const match = rules.id.match(/(CVE-\d+-\d+)/i);
-              if(match && Array.isArray(match) && match.length > 0){
-                if(!CVEs.includes(match[1])){
-                  CVEs.push(match[1]);
-                }
-              }else{
-                Eleven.info(`sarif_file rule ${rules.id} is not a valid CVE ID!`);
-              }
-            }
-          }else{
-            Eleven.info(`sarif_file ${file} is not a grype report!`);
-          }
-        }catch(e){
-          Eleven.info(`sarif_file ${file} is not a grype report! Exception ${e.toString()}`);
-        }
-      }catch(e){
-        Eleven.info(`sarif_file ${file} not a valid JSON file! Exception ${e.toString()}`);
-      }
-    }else{
-      Eleven.info(`sarif_file ${file} not found!`);
-    }
-    return(CVEs);
-  }
-
-  static async build_output_metadata(metadata){
-    // will return the buildx log if present
-    Eleven.debug(`build_output_metadata(${metadata})`);
-
-    let log = '';
-    if(null === metadata){
-      log = readFileSync('./buildx.log').toString();
-    }else{
-      try{
-        const json = JSON.parse(metadata);
-        try{
-          const id = json?.["buildx.build.ref"].split('/').pop();
-          try{
-            log = await run('docker', ['buildx', 'history', 'logs', id]);
-          }catch(e){
-            Eleven.info(`build_output_metadata could not call buildx history logs.`);
-          }
-        }catch(e){
-          Eleven.info(`build_output_metadata buildx.build.ref is not set!`);
-        }
-      }catch(e){
-        Eleven.info(`build_output_metadata is not a valid JSON object!`);
-      }
-    }
-
-    if(log.length > 0){
-      Eleven.debug(`buildx log has ${[...log].reduce((a, c) => a + (c === '\n' ? 1 : 0), 0)} lines`);
-    }
-    return(log);
-  }
-}
-
-/***/ }),
-
-/***/ 411:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const Eleven = __nccwpck_require__(7248);
-const Inputs = __nccwpck_require__(2376);
-const markdownCVE = __nccwpck_require__(166);
-
-const core = __nccwpck_require__(8992);
-const { readdirSync, readFileSync, writeFileSync, existsSync } = __nccwpck_require__(3024);
-
-module.exports = class README{
-  #inputs = {};
-  #files = {
-    workflows:{
-      tags:'',
-    },
-    dockerfile:'',
-    build:'',
-    readme:'',
-    compose:'',
-  };
-  #env = {};
-  #json = {};
-  #header = [];
-  #footer = [];
-
-  constructor(){
-
-  }
-
-  async init(){
-    try{
-      Eleven.debug(`current workdir is ${__dirname}`);
-
-      if(core.getInput('development')){
-        Eleven.environment('development');
-      }
-
-      const inputs = {
-        sarif_file:{value:'', debug:'report.sarif'},
-        build_output_metadata:{value:'{}', debug:null},
-      };
-
-      for(const input in inputs){
-        if(core.getInput(input) || Eleven.debug){
-          if(typeof(Inputs[input]) === 'function'){
-            if(Eleven.debug && existsSync('.development')){
-              inputs[input].value = inputs[input].debug;
-            }else{
-              inputs[input].value = core.getInput(input);
-            }
-            try{
-              this.#inputs[input] = await Inputs[input].apply(this, [inputs[input].value]);
-            }catch(e){
-
-            }
-          }else{
-            Eleven.info(`input ${input} is not a valid function!`);
-          }
-        }else{
-          Eleven.info(`input ${input} is not set!`);
-        }
-      }
-
-      this.#loadImageFiles();
-      this.#setupEnvironment();
-      this.#create();
-    }catch(e){
-      Eleven.info(e);
-    }
-  }
-
-  #loadImageFiles(){
-    readdirSync('./').forEach(file => {
-      switch(true){
-        case /^\.json/i.test(file):
-          this.#json = JSON.parse(readFileSync(file).toString());
-          this.#jsonToTemplateVariable(this.#json, 'json_');
-          break;
-
-        case /arch\.dockerfile/i.test(file):
-          this.#files.dockerfile = readFileSync(file).toString();
-          break;
-
-        case /build\.dockerfile/i.test(file):
-          this.#files.build = readFileSync(file).toString();
-          break;
-
-        case /project\.md/i.test(file):
-          this.#files.readme = readFileSync(file).toString();
-          break;
-
-        case /compose\.yaml|compose\.yml/i.test(file):
-          this.#files.compose = readFileSync(file).toString();
-          break;
-
-        case /\.github/i.test(file):
-          if(existsSync('./.github/workflows/tags.yml')){
-            this.#files.workflows.tags = readFileSync('./.github/workflows/tags.yml').toString();
-          }
-          break;
-      }
-    });
-  }
-
-  #setupEnvironment(){
-
-    /*
-    try{
-      await Grype.init();
-    }catch(e){
-      Eleven.info(e);
-    }
-    */
-
-    if(this.#json?.readme?.grype?.severity > 0){
-      /*
-      Grype.cutoff = this.#json.readme.grype.severity;
-      Eleven.debug(`set grype markdown cutoff to ${Grype.cutoff}`);
-      */
-    }
-    
-    if(this.#inputs.sarif_file && this.#inputs.sarif_file.length > 0){
-      Eleven.debug(`create markdownCVE for sarif_file with ${this.#inputs.sarif_file.length} CVEs`);
-      const report = new markdownCVE({
-        title:etc.title.sarif,
-        CVEs:this.#inputs.sarif_file,
-      });
-      etc.content.sarif = report.create();
-    }
-
-    if(this.#inputs.build_output_metadata && this.#inputs.build_output_metadata.length > 0){
-      const CVEs = [];
-      const matches = [...this.#inputs.build_output_metadata.matchAll(/"type":"FIX","msg":"CVE\|(\S+)\|(\S+)"/ig)];
-      for(const match of matches){
-        if(/amd64/ig.test(match[2])){
-          if(!CVEs.includes(match[1])){
-            CVEs.push(match[1]);
-          }
-        }
-      }
-
-      Eleven.debug(`create markdownCVE for build_output_metadata with ${CVEs.length} CVEs`);
-      const report = new markdownCVE({
-        title:etc.title.patches,
-        text:etc.text.patches,
-        CVEs:CVEs,
-      });
-
-      etc.content.patches = report.create();
-    }
-
-    this.#tags();
-
-    // check for compose example
-    if(this.#files.compose.length > 0){
-      etc.content.compose = `${etc.title.compose}\r\n${"```"}yaml\r\n${this.#files.compose}\r\n${"```"}`;
-    }
-
-    // check for build example
-    if(this.#files.build.length > 0){
-      etc.content.build = `${etc.title.build}\r\n${"```"}yaml\r\n${this.#files.build}\r\n${"```"}`;
-    }
-
-    // check for parent image
-    this.#env['distro_icon'] = '⛰️ ';
-    switch(true){
-      case /scratch/i.test(this.#json?.readme?.parent?.image): this.#env['distro_icon'] = ''; this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/scratch'; break;
-      case /11notes\/alpine\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/r/11notes/alpine'; break;
-      case /11notes\/kms\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/r/11notes/kms'; break;
-      case /ubuntu\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['distro_icon'] = '🍟 '; this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/ubuntu'; break;
-    }
-
-    // check for built
-    const built = [];
-    for(const k in this.#json?.readme?.built){
-      built.push(`* [${k}](${this.#json.readme.built[k]})`);
-    }
-    if(built.length > 0){
-      etc.content.built = `${etc.title.built}\r\n${built.join("\r\n")}`;
-    }
-
-    // finalize env
-    this.#jsonToTemplateVariable(etc);
-
-    // setup readme
-    this.#header = [
-      '![banner](https://github.com/11notes/defaults/blob/main/static/img/banner.png?raw=true)',
-      `# \${{ distro_icon }}\${{ json_name }}\r\n${etc.content.shields}`,
-      this.#json.readme.description,
-      etc.content.tags,
-    ];
-
-    this.#footer = [
-      etc.content.patches,
-      etc.content.sarif,
-      `# ElevenNotes™️\r\nThis image is provided to you at your own risk. Always make backups before updating an image to a different version. Check the [releases](https://github.com/11notes/docker-${this.#json.name}/releases) for breaking changes. If you have any problems with using this image simply raise an [issue](https://github.com/11notes/docker-${this.#json.name}/issues), thanks. If you have a question or inputs please create a new [discussion](https://github.com/11notes/docker-${this.#json.name}/discussions) instead of an issue. You can find all my other repositories on [github](https://github.com/11notes?tab=repositories).`,
-      `*created ${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'})} (CET)*`,
-    ];
-  }
-
-  #tags(){
-    let tags = [];
-    let hasUnraid = false;
-    tags.push(this.#json.semver.version);
-    for(const tag in this.#json.semver){
-      if(tag !== 'version'){
-        switch(true){
-          case /stable/i.test(tag): tags.push('stable'); break;
-          case /latest/i.test(tag): tags.push('latest'); break;
-        }
-      }
-    }
-
-    // check if image supports unraid tags
-    if(/unraid|"uid":"99"/i.test(this.#files.workflows.tags) || /eleven unraid/i.test(this.#files.dockerfile)){
-      hasUnraid = true;
-      const unraid = [];
-      for(const tag of tags){
-        unraid.push(`${tag}-unraid`);
-      }
-      tags = tags.concat(unraid);
-    }
-
-    // create tags content
-    if(tags.length > 0){
-      const list = [];
-      for(const tag of tags){
-        list.push(`* [${tag}](https://hub.docker.com/r/11notes/${this.#json.name}/tags?name=${tag})`);
-      }
-      etc.content.tags = `${etc.title.tags}\r\n${etc.text.tags}\r\n\r\n${list.join("\r\n")}`;
-
-      if(hasUnraid){
-        Eleven.info('add UNRAID to README.md');
-        etc.content.tags += `\r\n\r\n${etc.content.unraid}`;
-      }
-    }
-  }
-
-  #create(){
-    const output = {
-      markdown:'',
-      header:[],
-      footer:[],
-    };
-
-    // header
-    for(const e of this.#header){
-      if(`${e}`.length > 0){
-        output.header.push(e);
-      }
-    }
-    output.markdown += `${output.header.join("\r\n\r\n")}\r\n\r\n`;
-
-    // body
-    output.markdown += this.#files.readme;
-
-    // footer
-    for(const e of this.#footer){
-      if(`${e}`.length > 0){
-        output.footer.push(e);
-      }
-    }
-    output.markdown += `\r\n\r\n${output.footer.join("\r\n\r\n")}`;
-
-    for(const k in this.#env){
-      output.markdown = output.markdown.replace(new RegExp(`\\\${{ ${String(k).toLowerCase()} }}`, 'ig'), this.#env[k]);
-    }
-
-    // include all files
-    const includes = [...output.markdown.matchAll(/\${{ include:\s+(\S+) }}/ig)];
-    for(const file of includes){
-      if(existsSync(file[1])){
-        output.markdown = output.markdown.replace(`\${{ include: ${file[1]} }}`, readFileSync(file[1]).toString());
-      }else{
-        output.markdown = output.markdown.replace(`\${{ include: ${file[1]} }}`,`file ${file[1]} not found!`);
-      }
-    }
-
-    // add images
-    const images = [...output.markdown.matchAll(/\${{ image:\s+(\S+) }}/ig)];
-    for(const file of images){
-      if(existsSync(`./img/${file[1]}`)){
-        output.markdown = output.markdown.replace(`\${{ image: ${file[1]} }}`, `![${file[1].split('.')[0].toUpperCase()}](https://github.com/11notes/docker-${this.#json.name}/blob/master/img/${file[1]}?raw=true)`);
-      }else{
-        output.markdown = output.markdown.replace(`\${{ image: ${file[1]} }}`,`image ${file[1]} not found!`);
-      }
-    }
-
-    for(const k in this.#env){
-      output.markdown = output.markdown.replace(new RegExp(`\\\${{ ${String(k).toLowerCase()} }}`, 'ig'), this.#env[k]);
-    }
-
-    // write file
-    if(!existsSync('.development')){
-      Eleven.info('writing updated README.md');
-      writeFileSync('./README.md', output.markdown);
-    }else if(Eleven.get('debug')){
-      Eleven.debug('writing updated debug TREADME.md');
-      writeFileSync('./TREADME.md', output.markdown);
-    }
-  }
-
-
-  // helper functions
-  #jsonToTemplateVariable(json, prefix = ''){
-    for(const k in json){
-      if(typeof(json[k]) === 'object'){
-        this.#jsonToTemplateVariable(json[k], `${prefix}${k}_`);
-      }else{
-        this.#env[`${prefix}${k.toLowerCase()}`] = json[k];
-      }
-    }
-  }
-}
-
-const etc = {
-  title:{
-    synopsis:'# SYNOPSIS 📖',
-    volumes:'# VOLUMES 📁',
-    built:'# BUILT WITH 🧰',
-    build:'# BUILD 🚧',
-    unraid:'# UNRAID VERSION 🟠',
-    compose:'# COMPOSE ✂️',
-    tips:'# GENERAL TIPS 📌',
-    environment:'# ENVIRONMENT 📝',
-    source:'# SOURCE 💾',
-    parent:'# PARENT IMAGE 🏛️',
-    config:'# DEFAULT CONFIG 📑',
-    patches:'# PATCHED CVE 🦟',
-    tags:'# MAIN TAGS 🏷️',
-    defaults:'# DEFAULT SETTINGS 🗃️',
-    sarif:'# SECURITY VULNERABILITIES REPORT ⚡',
-  },
-  
-  content:{
-    shields:`${[
-      '[<img src="https://img.shields.io/badge/github-source-blue?logo=github&color=040308">](https://github.com/11notes/docker-${{ json_name }})',
-      '![size](https://img.shields.io/docker/image-size/${{ json_image }}/${{ json_semver_version }}?color=0eb305)',
-      '![version](https://img.shields.io/docker/v/${{ json_image }}/${{ json_semver_version }}?color=eb7a09)',
-      '![pulls](https://img.shields.io/docker/pulls/${{ json_image }}?color=2b75d6)',
-      '[<img src="https://img.shields.io/github/issues/11notes/docker-${{ json_name }}?color=7842f5">](https://github.com/11notes/docker-${{ json_name }}/issues)',
-    ].join("")}`,
-    tips:`\${{ title_tips }}\r\n${[
-      '* Use a reverse proxy like Traefik, Nginx, HAproxy to terminate TLS and to protect your endpoints',
-      '* Use Let’s Encrypt DNS-01 challenge to obtain valid SSL certificates for your services'
-    ].join("\r\n")}`,
-    unraid:"${{ title_unraid }}\r\nThis image supports unraid by default. Simply add **-unraid** to any tag and the image will run as 99:100 instead of 1000:1000 causing no issues on unraid. Enjoy.",
-    build:"${{ title_build }}\r\n```dockerfile\r\n${{ include: ./build.dockerfile }}\r\n```",
-    tags:'',
-    synopsis:'\${{ title_synopsis }}\r\n**What can I do with this?**',
-    environment:`\${{ title_environment }}\r\n${[
-      '| Parameter | Value | Default |',
-      '| --- | --- | --- |',
-      '| `TZ` | [Time Zone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) | |',
-      '| `DEBUG` | Will activate debug option for container image and app (if available) | |',
-    ].join("\r\n")}`,
-    defaults:`\${{ title_defaults }}\r\n${[
-      '| Parameter | Value | Description |',
-      '| --- | --- | --- |',
-      '| `user` | docker | user name |',
-      '| `uid` | 1000 | [user identifier](https://en.wikipedia.org/wiki/User_identifier) |',
-      '| `gid` | 1000 | [group identifier](https://en.wikipedia.org/wiki/Group_identifier) |',
-      '| `home` | ${{ json_root }} | home directory of user docker |',
-    ].join("\r\n")}`,
-    parent:"${{ title_parent }}\r\n* [${{ json_readme_parent_image }}](${{ json_readme_parent_url }})",
-    source:"${{ title_source }}\r\n* [${{ json_image }}](https://github.com/11notes/docker-${{ json_name }})",
-    sarif:'',
-    patches:'',
-  },
-  text:{
-    tags:'These are the main tags for the image. There is also a tag for each commit and its shorthand sha256 value.',
-    patches:"Unlike other popular image providers, this image contains individual CVE fixes to create a clean container image even if the developers of the original app simply forgot or refuse to do that. Why not add a PR with these fixes? Well, many developers ignore PR for CVE fixes and don’t run any code security scanners against their repos. Some simply don’t care.\r\n\r\n",
-  }
-};
-
-/***/ }),
-
-/***/ 166:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const Eleven = __nccwpck_require__(7248);
-//const Grype = require('./Grype.js');
-
-module.exports = class markdownCVE{
-  #CVEs = {};
-  #markdown = [];
-
-  constructor(opt){
-    if(opt?.title){
-      this.#markdown.push(opt.title);
-    }
-    if(opt?.text){
-      this.#markdown.push(opt.text);
-    }
-    if(opt?.CVEs){
-      for(const CVE of opt.CVEs){
-        this.add(CVE);
-      }
-    }
-    this.#markdown.push('| ID | Severity | Risk | Vector | Source |');
-    this.#markdown.push('| --- | --- | --- | --- | --- |');
-  }
-
-  add(ID){
-    if(!this.#CVEs[ID]){
-      this.#CVEs[ID] = true;
-    }
-  }
-
-  create(){
-    const CVEs = [];
-    for(const ID in this.#CVEs){
-      const update = false; //Grype.getCVE(ID);
-      if(update && update.vector.length > 0){
-        if(update.severity >= Grype.cutoff){
-          CVEs.push(update);
-        }else{
-          Eleven.debug(`skipping ${ID} due to severity cutoff (${update.severity} < ${Grype.cutoff})`)
-        }
-      }else{
-        Eleven.info(`could not parse ${ID}, no proper result from grype database`);
-      }
-    }
-
-    if(CVEs.length > 0){
-      CVEs.sort((a, b) => {return(b.severity - a.severity)});
-      for(const CVE of CVEs){
-        this.#markdown.push(`| ${CVE.id} | ${this.#scoreToText(CVE.severity)} | ${this.#scoreToText(CVE.risk)} | [${CVE.vector}](https://www.first.org/cvss/calculator/3.1#${CVE.vector}) | [${CVE.id}](https://nvd.nist.gov/vuln/detail/${CVE.id}) |`);
-      }
-      return(this.#markdown.join("\r\n"));
-    }else{
-      Eleven.info(`could not create report for ${this.#markdown[0]}`);
-      return('');
-    }
-  }
-
-  #scoreToText(severity){
-    switch(true){
-      case severity <= 0: return('none');
-      case severity > 0 && severity <= 3.9: return('low');
-      case severity >= 4 && severity <= 6.9: return('medium');
-      case severity >= 7 && severity <= 8.9: return('high');
-      case severity >= 9: return('critical');
-    }
-  }
-}
-
-/***/ }),
-
-/***/ 1444:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const Eleven = __nccwpck_require__(7248);
-const { spawn } = __nccwpck_require__(1421);
-
-module.exports = run = async(bin, args) => {
-  return(new Promise((resolve, reject) => {
-    const param = (Array.isArray(args) ? args : args.split(' '));
-    Eleven.debug(`run ${bin} ${param.join(' ')}`);
-    const ps = spawn(bin, param, {shell:true, stdio:['pipe', 'pipe', 'pipe']});
-    const io = {stdout:'', stderr:''};
-    ps.stderr.on('data', data => {io.stderr += data.toString()});
-    ps.stdout.on('data', data => {io.stdout += data.toString()});
-    ps.on('error', error => {reject(error)});
-    ps.on('close', code => {
-      if(code === 0){
-        if(io.stderr.length > 0 && io.stdout.length <= 0){
-          // seems binary has logged all to stderr instead of stdout with exit code 0
-          resolve(io.stderr.trim());
-        }else{
-          resolve(io.stdout.trim());
-        }
-      }else{
-        reject(io.stderr);
-      }
-    });
-  }));
-}
-
-/***/ }),
-
 /***/ 2613:
 /***/ ((module) => {
 
@@ -26406,14 +26568,6 @@ module.exports = require("net");
 
 /***/ }),
 
-/***/ 1421:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:child_process");
-
-/***/ }),
-
 /***/ 7598:
 /***/ ((module) => {
 
@@ -26427,22 +26581,6 @@ module.exports = require("node:crypto");
 
 "use strict";
 module.exports = require("node:events");
-
-/***/ }),
-
-/***/ 3024:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:fs");
-
-/***/ }),
-
-/***/ 6760:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:path");
 
 /***/ }),
 
@@ -28239,12 +28377,20 @@ module.exports = parseParams
 /************************************************************************/
 var __webpack_exports__ = {};
 const Eleven = __nccwpck_require__(7248);
+const Database = __nccwpck_require__(18);
 
 try{
-  const README = __nccwpck_require__(411);
+  /*
+  const README = require('./src/README.js');
   const readme = new README();
   Eleven.info('starting action-docker-readme');
   readme.init();
+  */
+  const db = new Database('/home/runner/.cache/grype/db/5/vulnerability.db', {
+    fileMustExist:true,
+    readonly:true,
+  });
+  Eleven.info(db.prepare('SELECT * FROM id WHERE schema_version = 5').all());
 }catch(e){
   Eleven.info(e);
 }
