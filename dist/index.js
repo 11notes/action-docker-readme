@@ -3918,6 +3918,273 @@ exports.inspect = Symbol.for('nodejs.util.inspect.custom');
 
 /***/ }),
 
+/***/ 221:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+module.exports = require(__nccwpck_require__.ab + "build/Release/node_sqlite3.node");
+
+
+/***/ }),
+
+/***/ 9757:
+/***/ ((module, exports, __nccwpck_require__) => {
+
+const path = __nccwpck_require__(6928);
+const sqlite3 = __nccwpck_require__(221);
+const EventEmitter = (__nccwpck_require__(4434).EventEmitter);
+module.exports = exports = sqlite3;
+
+function normalizeMethod (fn) {
+    return function (sql) {
+        let errBack;
+        const args = Array.prototype.slice.call(arguments, 1);
+
+        if (typeof args[args.length - 1] === 'function') {
+            const callback = args[args.length - 1];
+            errBack = function(err) {
+                if (err) {
+                    callback(err);
+                }
+            };
+        }
+        const statement = new Statement(this, sql, errBack);
+        return fn.call(this, statement, args);
+    };
+}
+
+function inherits(target, source) {
+    for (const k in source.prototype)
+        target.prototype[k] = source.prototype[k];
+}
+
+sqlite3.cached = {
+    Database: function(file, a, b) {
+        if (file === '' || file === ':memory:') {
+            // Don't cache special databases.
+            return new Database(file, a, b);
+        }
+
+        let db;
+        file = path.resolve(file);
+
+        if (!sqlite3.cached.objects[file]) {
+            db = sqlite3.cached.objects[file] = new Database(file, a, b);
+        }
+        else {
+            // Make sure the callback is called.
+            db = sqlite3.cached.objects[file];
+            const callback = (typeof a === 'number') ? b : a;
+            if (typeof callback === 'function') {
+                function cb() { callback.call(db, null); }
+                if (db.open) process.nextTick(cb);
+                else db.once('open', cb);
+            }
+        }
+
+        return db;
+    },
+    objects: {}
+};
+
+
+const Database = sqlite3.Database;
+const Statement = sqlite3.Statement;
+const Backup = sqlite3.Backup;
+
+inherits(Database, EventEmitter);
+inherits(Statement, EventEmitter);
+inherits(Backup, EventEmitter);
+
+// Database#prepare(sql, [bind1, bind2, ...], [callback])
+Database.prototype.prepare = normalizeMethod(function(statement, params) {
+    return params.length
+        ? statement.bind.apply(statement, params)
+        : statement;
+});
+
+// Database#run(sql, [bind1, bind2, ...], [callback])
+Database.prototype.run = normalizeMethod(function(statement, params) {
+    statement.run.apply(statement, params).finalize();
+    return this;
+});
+
+// Database#get(sql, [bind1, bind2, ...], [callback])
+Database.prototype.get = normalizeMethod(function(statement, params) {
+    statement.get.apply(statement, params).finalize();
+    return this;
+});
+
+// Database#all(sql, [bind1, bind2, ...], [callback])
+Database.prototype.all = normalizeMethod(function(statement, params) {
+    statement.all.apply(statement, params).finalize();
+    return this;
+});
+
+// Database#each(sql, [bind1, bind2, ...], [callback], [complete])
+Database.prototype.each = normalizeMethod(function(statement, params) {
+    statement.each.apply(statement, params).finalize();
+    return this;
+});
+
+Database.prototype.map = normalizeMethod(function(statement, params) {
+    statement.map.apply(statement, params).finalize();
+    return this;
+});
+
+// Database#backup(filename, [callback])
+// Database#backup(filename, destName, sourceName, filenameIsDest, [callback])
+Database.prototype.backup = function() {
+    let backup;
+    if (arguments.length <= 2) {
+        // By default, we write the main database out to the main database of the named file.
+        // This is the most likely use of the backup api.
+        backup = new Backup(this, arguments[0], 'main', 'main', true, arguments[1]);
+    } else {
+        // Otherwise, give the user full control over the sqlite3_backup_init arguments.
+        backup = new Backup(this, arguments[0], arguments[1], arguments[2], arguments[3], arguments[4]);
+    }
+    // Per the sqlite docs, exclude the following errors as non-fatal by default.
+    backup.retryErrors = [sqlite3.BUSY, sqlite3.LOCKED];
+    return backup;
+};
+
+Statement.prototype.map = function() {
+    const params = Array.prototype.slice.call(arguments);
+    const callback = params.pop();
+    params.push(function(err, rows) {
+        if (err) return callback(err);
+        const result = {};
+        if (rows.length) {
+            const keys = Object.keys(rows[0]);
+            const key = keys[0];
+            if (keys.length > 2) {
+                // Value is an object
+                for (let i = 0; i < rows.length; i++) {
+                    result[rows[i][key]] = rows[i];
+                }
+            } else {
+                const value = keys[1];
+                // Value is a plain value
+                for (let i = 0; i < rows.length; i++) {
+                    result[rows[i][key]] = rows[i][value];
+                }
+            }
+        }
+        callback(err, result);
+    });
+    return this.all.apply(this, params);
+};
+
+let isVerbose = false;
+
+const supportedEvents = [ 'trace', 'profile', 'change' ];
+
+Database.prototype.addListener = Database.prototype.on = function(type) {
+    const val = EventEmitter.prototype.addListener.apply(this, arguments);
+    if (supportedEvents.indexOf(type) >= 0) {
+        this.configure(type, true);
+    }
+    return val;
+};
+
+Database.prototype.removeListener = function(type) {
+    const val = EventEmitter.prototype.removeListener.apply(this, arguments);
+    if (supportedEvents.indexOf(type) >= 0 && !this._events[type]) {
+        this.configure(type, false);
+    }
+    return val;
+};
+
+Database.prototype.removeAllListeners = function(type) {
+    const val = EventEmitter.prototype.removeAllListeners.apply(this, arguments);
+    if (supportedEvents.indexOf(type) >= 0) {
+        this.configure(type, false);
+    }
+    return val;
+};
+
+// Save the stack trace over EIO callbacks.
+sqlite3.verbose = function() {
+    if (!isVerbose) {
+        const trace = __nccwpck_require__(1001);
+        [
+            'prepare',
+            'get',
+            'run',
+            'all',
+            'each',
+            'map',
+            'close',
+            'exec'
+        ].forEach(function (name) {
+            trace.extendTrace(Database.prototype, name);
+        });
+        [
+            'bind',
+            'get',
+            'run',
+            'all',
+            'each',
+            'map',
+            'reset',
+            'finalize',
+        ].forEach(function (name) {
+            trace.extendTrace(Statement.prototype, name);
+        });
+        isVerbose = true;
+    }
+
+    return sqlite3;
+};
+
+
+/***/ }),
+
+/***/ 1001:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+// Inspired by https://github.com/tlrobinson/long-stack-traces
+const util = __nccwpck_require__(9023);
+
+function extendTrace(object, property, pos) {
+    const old = object[property];
+    object[property] = function() {
+        const error = new Error();
+        const name = object.constructor.name + '#' + property + '(' +
+            Array.prototype.slice.call(arguments).map(function(el) {
+                return util.inspect(el, false, 0);
+            }).join(', ') + ')';
+
+        if (typeof pos === 'undefined') pos = -1;
+        if (pos < 0) pos += arguments.length;
+        const cb = arguments[pos];
+        if (typeof arguments[pos] === 'function') {
+            arguments[pos] = function replacement() {
+                const err = arguments[0];
+                if (err && err.stack && !err.__augmented) {
+                    err.stack = filter(err).join('\n');
+                    err.stack += '\n--> in ' + name;
+                    err.stack += '\n' + filter(error).slice(1).join('\n');
+                    err.__augmented = true;
+                }
+                return cb.apply(this, arguments);
+            };
+        }
+        return old.apply(this, arguments);
+    };
+}
+exports.extendTrace = extendTrace;
+
+
+function filter(error) {
+    return error.stack.split('\n').filter(function(line) {
+        return line.indexOf(__filename) < 0;
+    });
+}
+
+
+/***/ }),
+
 /***/ 1651:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -26818,8 +27085,11 @@ const { Readable } = __nccwpck_require__(7075);
 const tar = __nccwpck_require__(463);
 const Database = __nccwpck_require__(477);
 
+const sqlite3 = __nccwpck_require__(9757)
+const { open } = __nccwpck_require__(907);
+
 class Grype{
-  static database = false;
+  static database;
   static cutoff = 7;
 
   static getCVE(ID){
@@ -26898,6 +27168,18 @@ class Grype{
       Grype.#checkFileLock(files.cache.src);
       Eleven.info(`found previous grype database at ${files.cache.src}`);
       try{
+
+        try{
+          const sqlitedb = await open({
+            filename: files.cache.src,
+            driver: sqlite3.Database,
+          })
+          const result = await sqlitedb.get('SELECT * FROM id WHERE schema_version = 5');
+          Eleven.debug(result);
+        }catch(e){
+          Eleven.debug(e);
+        }
+
         Eleven.debug(`open sqlite database ${files.cache.src} with options:`);
         Eleven.debug(sqliteOptions);
         Grype.database = new Database(files.cache.src, sqliteOptions);
@@ -26910,6 +27192,18 @@ class Grype{
       Grype.#checkFileLock(files.db);
       Eleven.info(`found existing grype database at ${files.db}`);
       try{
+
+        try{
+          const sqlitedb = await open({
+            filename: files.db,
+            driver: sqlite3.Database,
+          })
+          const result = await sqlitedb.get('SELECT * FROM id WHERE schema_version = 5');
+          Eleven.debug(result);
+        }catch(e){
+          Eleven.debug(e);
+        }
+
         Eleven.debug(`open sqlite database ${files.db} with options:`);
         Eleven.debug(sqliteOptions);
         Grype.database = new Database(files.db, sqliteOptions);
@@ -31505,6 +31799,674 @@ class BrotliDecompress extends Brotli {
 }
 exports.BrotliDecompress = BrotliDecompress;
 //# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 782:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Database = void 0;
+const Statement_1 = __nccwpck_require__(4630);
+const migrate_1 = __nccwpck_require__(3276);
+const strings_1 = __nccwpck_require__(2699);
+const format_error_1 = __nccwpck_require__(5625);
+/**
+ * Promisified wrapper for the sqlite3#Database interface.
+ */
+class Database {
+    constructor(config) {
+        this.config = config;
+        this.db = null;
+    }
+    /**
+     * Event handler when verbose mode is enabled.
+     * @see https://github.com/mapbox/node-sqlite3/wiki/Debugging
+     */
+    on(event, listener) {
+        this.db.on(event, listener);
+    }
+    /**
+     * Returns the underlying sqlite3 Database instance
+     */
+    getDatabaseInstance() {
+        return this.db;
+    }
+    /**
+     * Opens the database
+     */
+    open() {
+        return new Promise((resolve, reject) => {
+            let { filename, mode, driver } = this.config;
+            // https://github.com/mapbox/node-sqlite3/wiki/API#new-sqlite3databasefilename-mode-callback
+            if (filename === null || filename === undefined) {
+                throw new Error('sqlite: filename cannot be null / undefined');
+            }
+            if (!driver) {
+                throw new Error('sqlite: driver is not defined');
+            }
+            if (mode) {
+                this.db = new driver(filename, mode, err => {
+                    if (err) {
+                        return reject((0, format_error_1.formatError)(err));
+                    }
+                    resolve();
+                });
+            }
+            else {
+                this.db = new driver(filename, err => {
+                    if (err) {
+                        return reject((0, format_error_1.formatError)(err));
+                    }
+                    resolve();
+                });
+            }
+        });
+    }
+    /**
+     * Closes the database.
+     */
+    close() {
+        return new Promise((resolve, reject) => {
+            this.db.close(err => {
+                if (err) {
+                    return reject((0, format_error_1.formatError)(err));
+                }
+                resolve();
+            });
+        });
+    }
+    /**
+     * @see https://github.com/mapbox/node-sqlite3/wiki/API#databaseconfigureoption-value
+     */
+    configure(option, value) {
+        this.db.configure(option, value);
+    }
+    /**
+     * Runs the SQL query with the specified parameters. It does not retrieve any result data.
+     * The function returns the Database object for which it was called to allow for function chaining.
+     *
+     * @param {string} sql The SQL query to run.
+     *
+     * @param {any} [params, ...] When the SQL statement contains placeholders, you
+     * can pass them in here. They will be bound to the statement before it is
+     * executed. There are three ways of passing bind parameters: directly in
+     * the function's arguments, as an array, and as an object for named
+     * parameters. This automatically sanitizes inputs.
+     *
+     * @see https://github.com/mapbox/node-sqlite3/wiki/API#databaserunsql-param--callback
+     */
+    run(sql, ...params) {
+        return new Promise((resolve, reject) => {
+            const sqlObj = (0, strings_1.toSqlParams)(sql, params);
+            this.db.run(sqlObj.sql, ...sqlObj.params, function (err) {
+                if (err) {
+                    return reject((0, format_error_1.formatError)(err));
+                }
+                resolve({
+                    stmt: new Statement_1.Statement(this.stmt),
+                    lastID: this.lastID,
+                    changes: this.changes
+                });
+            });
+        });
+    }
+    /**
+     * Runs the SQL query with the specified parameters and resolves with
+     * with the first result row afterwards. If the result set is empty, returns undefined.
+     *
+     * The property names correspond to the column names of the result set.
+     * It is impossible to access them by column index; the only supported way is by column name.
+     *
+     * @param {string} sql The SQL query to run.
+     *
+     * @param {any} [params, ...] When the SQL statement contains placeholders, you
+     * can pass them in here. They will be bound to the statement before it is
+     * executed. There are three ways of passing bind parameters: directly in
+     * the function's arguments, as an array, and as an object for named
+     * parameters. This automatically sanitizes inputs.
+     *
+     * @see https://github.com/mapbox/node-sqlite3/wiki/API#databasegetsql-param--callback
+     */
+    get(sql, ...params) {
+        return new Promise((resolve, reject) => {
+            const sqlObj = (0, strings_1.toSqlParams)(sql, params);
+            this.db.get(sqlObj.sql, ...sqlObj.params, (err, row) => {
+                if (err) {
+                    return reject((0, format_error_1.formatError)(err));
+                }
+                resolve(row);
+            });
+        });
+    }
+    each(sql, ...params) {
+        return new Promise((resolve, reject) => {
+            const callback = params.pop();
+            if (!callback || typeof callback !== 'function') {
+                throw new Error('sqlite: Last param of Database#each() must be a callback function');
+            }
+            if (params.length > 0) {
+                const positional = params.pop();
+                if (typeof positional === 'function') {
+                    throw new Error('sqlite: Database#each() should only have a single callback defined. See readme for usage.');
+                }
+                params.push(positional);
+            }
+            const sqlObj = (0, strings_1.toSqlParams)(sql, params);
+            this.db.each(sqlObj.sql, ...sqlObj.params, (err, row) => {
+                if (err) {
+                    return callback((0, format_error_1.formatError)(err), null);
+                }
+                callback(null, row);
+            }, (err, count) => {
+                if (err) {
+                    return reject((0, format_error_1.formatError)(err));
+                }
+                resolve(count);
+            });
+        });
+    }
+    /**
+     * Runs the SQL query with the specified parameters. The parameters are the same as the
+     * Database#run function, with the following differences:
+     *
+     * If the result set is empty, it will be an empty array, otherwise it will
+     * have an object for each result row which
+     * in turn contains the values of that row, like the Database#get function.
+     *
+     * Note that it first retrieves all result rows and stores them in memory.
+     * For queries that have potentially large result sets, use the Database#each
+     * function to retrieve all rows or Database#prepare followed by multiple
+     * Statement#get calls to retrieve a previously unknown amount of rows.
+     *
+     * @param {string} sql The SQL query to run.
+     *
+     * @param {any} [params, ...] When the SQL statement contains placeholders, you
+     * can pass them in here. They will be bound to the statement before it is
+     * executed. There are three ways of passing bind parameters: directly in
+     * the function's arguments, as an array, and as an object for named
+     * parameters. This automatically sanitizes inputs.
+     *
+     * @see https://github.com/mapbox/node-sqlite3/wiki/API#databaseallsql-param--callback
+     */
+    all(sql, ...params) {
+        return new Promise((resolve, reject) => {
+            const sqlObj = (0, strings_1.toSqlParams)(sql, params);
+            this.db.all(sqlObj.sql, ...sqlObj.params, (err, rows) => {
+                if (err) {
+                    return reject((0, format_error_1.formatError)(err));
+                }
+                resolve(rows);
+            });
+        });
+    }
+    /**
+     * Runs all SQL queries in the supplied string. No result rows are retrieved. If a query fails,
+     * no subsequent statements will be executed (wrap it in a transaction if you want all
+     * or none to be executed).
+     *
+     * Note: This function will only execute statements up to the first NULL byte.
+     * Comments are not allowed and will lead to runtime errors.
+     *
+     * @param {string} sql The SQL query to run.
+     * @see https://github.com/mapbox/node-sqlite3/wiki/API#databaseexecsql-callback
+     */
+    exec(sql) {
+        return new Promise((resolve, reject) => {
+            const sqlObj = (0, strings_1.toSqlParams)(sql);
+            this.db.exec(sqlObj.sql, err => {
+                if (err) {
+                    return reject((0, format_error_1.formatError)(err));
+                }
+                resolve();
+            });
+        });
+    }
+    /**
+     * Prepares the SQL statement and optionally binds the specified parameters.
+     * When bind parameters are supplied, they are bound to the prepared statement.
+     *
+     * @param {string} sql The SQL query to run.
+     * @param {any} [params, ...] When the SQL statement contains placeholders, you
+     * can pass them in here. They will be bound to the statement before it is
+     * executed. There are three ways of passing bind parameters: directly in
+     * the function's arguments, as an array, and as an object for named
+     * parameters. This automatically sanitizes inputs.
+     * @returns Promise<Statement> Statement object
+     */
+    prepare(sql, ...params) {
+        return new Promise((resolve, reject) => {
+            const sqlObj = (0, strings_1.toSqlParams)(sql, params);
+            const stmt = this.db.prepare(sqlObj.sql, ...sqlObj.params, err => {
+                if (err) {
+                    return reject(err);
+                }
+                resolve(new Statement_1.Statement(stmt));
+            });
+        });
+    }
+    /**
+     * Loads a compiled SQLite extension into the database connection object.
+     *
+     * @param {string} path Filename of the extension to load
+     */
+    loadExtension(path) {
+        return new Promise((resolve, reject) => {
+            this.db.loadExtension(path, err => {
+                if (err) {
+                    return reject((0, format_error_1.formatError)(err));
+                }
+                resolve();
+            });
+        });
+    }
+    /**
+     * Performs a database migration.
+     */
+    async migrate(config) {
+        await (0, migrate_1.migrate)(this, config);
+    }
+    /**
+     * The methods underneath requires creative work to implement. PRs / proposals accepted!
+     */
+    /*
+     * Unsure if serialize can be made into a promise.
+     */
+    serialize() {
+        throw new Error('sqlite: Currently not implemented. Use getDatabaseInstance().serialize() instead.');
+    }
+    /*
+     * Unsure if parallelize can be made into a promise.
+     */
+    parallelize() {
+        throw new Error('sqlite: Currently not implemented. Use getDatabaseInstance().parallelize() instead.');
+    }
+}
+exports.Database = Database;
+//# sourceMappingURL=Database.js.map
+
+/***/ }),
+
+/***/ 4630:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Statement = void 0;
+const format_error_1 = __nccwpck_require__(5625);
+/**
+ * Promisified wrapper for the sqlite3#Statement interface.
+ */
+class Statement {
+    constructor(stmt) {
+        this.stmt = stmt;
+    }
+    /**
+     * Returns the underlying sqlite3 Statement instance
+     */
+    getStatementInstance() {
+        return this.stmt;
+    }
+    /**
+     * Binds parameters to the prepared statement.
+     *
+     * Binding parameters with this function completely resets the statement object and row cursor
+     * and removes all previously bound parameters, if any.
+     */
+    bind(...params) {
+        return new Promise((resolve, reject) => {
+            this.stmt.bind(...params, err => {
+                if (err) {
+                    return reject((0, format_error_1.formatError)(err));
+                }
+                resolve();
+            });
+        });
+    }
+    /**
+     * Resets the row cursor of the statement and preserves the parameter bindings.
+     * Use this function to re-execute the same query with the same bindings.
+     */
+    reset() {
+        return new Promise(resolve => {
+            this.stmt.reset(() => {
+                resolve();
+            });
+        });
+    }
+    /**
+     * Finalizes the statement. This is typically optional, but if you experience long delays before
+     * the next query is executed, explicitly finalizing your statement might be necessary.
+     * This might be the case when you run an exclusive query (see section Control Flow).
+     * After the statement is finalized, all further function calls on that statement object
+     * will throw errors.
+     */
+    finalize() {
+        return new Promise((resolve, reject) => {
+            this.stmt.finalize(err => {
+                if (err) {
+                    return reject((0, format_error_1.formatError)(err));
+                }
+                resolve();
+            });
+        });
+    }
+    /**
+     * Binds parameters and executes the statement.
+     *
+     * If you specify bind parameters, they will be bound to the statement before it is executed.
+     * Note that the bindings and the row cursor are reset when you specify even a single bind parameter.
+     *
+     * The execution behavior is identical to the Database#run method with the difference that the
+     * statement will not be finalized after it is run. This means you can run it multiple times.
+     *
+     * @param {any} [params, ...] When the SQL statement contains placeholders, you
+     * can pass them in here. They will be bound to the statement before it is
+     * executed. There are three ways of passing bind parameters: directly in
+     * the function's arguments, as an array, and as an object for named
+     * parameters. This automatically sanitizes inputs.
+     */
+    run(...params) {
+        return new Promise((resolve, reject) => {
+            const stmt = this;
+            this.stmt.run(...params, function (err) {
+                if (err) {
+                    return reject((0, format_error_1.formatError)(err));
+                }
+                resolve({
+                    stmt,
+                    lastID: this.lastID,
+                    changes: this.changes
+                });
+            });
+        });
+    }
+    /**
+     * Binds parameters, executes the statement and retrieves the first result row.
+     * The parameters are the same as the Statement#run function, with the following differences:
+     *
+     * Using this method can leave the database locked, as the database awaits further
+     * calls to Statement#get to retrieve subsequent rows. To inform the database that you
+     * are finished retrieving rows, you should either finalize (with Statement#finalize)
+     * or reset (with Statement#reset) the statement.
+     *
+     * @param {any} [params, ...] When the SQL statement contains placeholders, you
+     * can pass them in here. They will be bound to the statement before it is
+     * executed. There are three ways of passing bind parameters: directly in
+     * the function's arguments, as an array, and as an object for named
+     * parameters. This automatically sanitizes inputs.
+     */
+    get(...params) {
+        return new Promise((resolve, reject) => {
+            this.stmt.get(...params, (err, row) => {
+                if (err) {
+                    return reject((0, format_error_1.formatError)(err));
+                }
+                resolve(row);
+            });
+        });
+    }
+    /**
+     * Binds parameters, executes the statement and calls the callback with all result rows.
+     * The parameters are the same as the Statement#run function, with the following differences:
+     *
+     * If the result set is empty, it will resolve to an empty array, otherwise it contains an
+     * object for each result row which in turn contains the values of that row.
+     * Like with Statement#run, the statement will not be finalized after executing this function.
+     *
+     * @param {any} [params, ...] When the SQL statement contains placeholders, you
+     * can pass them in here. They will be bound to the statement before it is
+     * executed. There are three ways of passing bind parameters: directly in
+     * the function's arguments, as an array, and as an object for named
+     * parameters. This automatically sanitizes inputs.
+     *
+     * @see https://github.com/mapbox/node-sqlite3/wiki/API#databaseallsql-param--callback
+     */
+    all(...params) {
+        return new Promise((resolve, reject) => {
+            this.stmt.all(...params, (err, rows) => {
+                if (err) {
+                    return reject((0, format_error_1.formatError)(err));
+                }
+                resolve(rows);
+            });
+        });
+    }
+    each(...params) {
+        return new Promise((resolve, reject) => {
+            const callback = params.pop();
+            if (!callback || typeof callback !== 'function') {
+                throw new Error('sqlite: Last param of Statement#each() must be a callback function');
+            }
+            if (params.length > 0) {
+                const positional = params.pop();
+                if (typeof positional === 'function') {
+                    throw new Error('sqlite: Statement#each() should only have a single callback defined. See readme for usage.');
+                }
+                params.push(positional);
+            }
+            this.stmt.each(...params, (err, row) => {
+                if (err) {
+                    return callback((0, format_error_1.formatError)(err), null);
+                }
+                callback(null, row);
+            }, (err, count) => {
+                if (err) {
+                    return reject((0, format_error_1.formatError)(err));
+                }
+                resolve(count);
+            });
+        });
+    }
+}
+exports.Statement = Statement;
+//# sourceMappingURL=Statement.js.map
+
+/***/ }),
+
+/***/ 907:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+/// <reference types="./vendor-typings/sqlite3" />
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Database = exports.Statement = exports.open = void 0;
+const Statement_1 = __nccwpck_require__(4630);
+Object.defineProperty(exports, "Statement", ({ enumerable: true, get: function () { return Statement_1.Statement; } }));
+const Database_1 = __nccwpck_require__(782);
+Object.defineProperty(exports, "Database", ({ enumerable: true, get: function () { return Database_1.Database; } }));
+/**
+ * Opens a database for manipulation. Most users will call this to get started.
+ */
+async function open(config) {
+    const db = new Database_1.Database(config);
+    await db.open();
+    return db;
+}
+exports.open = open;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 5625:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.formatError = void 0;
+function formatError(err) {
+    if (err instanceof Error) {
+        return err;
+    }
+    if (typeof err === 'object') {
+        const newError = new Error();
+        for (let prop in err) {
+            newError[prop] = err[prop];
+        }
+        // message isn't part of the enumerable set
+        if (err.message) {
+            newError.message = err.message;
+        }
+        return newError;
+    }
+    if (typeof err === 'string') {
+        return new Error(err);
+    }
+    return new Error(err);
+}
+exports.formatError = formatError;
+//# sourceMappingURL=format-error.js.map
+
+/***/ }),
+
+/***/ 3276:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.migrate = exports.readMigrations = void 0;
+const fs = __nccwpck_require__(9896);
+const path = __nccwpck_require__(6928);
+async function readMigrations(migrationPath) {
+    const migrationsPath = migrationPath || path.join(process.cwd(), 'migrations');
+    const location = path.resolve(migrationsPath);
+    // Get the list of migration files, for example:
+    //   { id: 1, name: 'initial', filename: '001-initial.sql' }
+    //   { id: 2, name: 'feature', filename: '002-feature.sql' }
+    const migrationFiles = await new Promise((resolve, reject) => {
+        fs.readdir(location, (err, files) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve(files
+                .map(x => x.match(/^(\d+).(.*?)\.sql$/))
+                .filter(x => x !== null)
+                .map(x => ({ id: Number(x[1]), name: x[2], filename: x[0] }))
+                .sort((a, b) => Math.sign(a.id - b.id)));
+        });
+    });
+    if (!migrationFiles.length) {
+        throw new Error(`No migration files found in '${location}'.`);
+    }
+    // Get the list of migrations, for example:
+    //   { id: 1, name: 'initial', filename: '001-initial.sql', up: ..., down: ... }
+    //   { id: 2, name: 'feature', filename: '002-feature.sql', up: ..., down: ... }
+    return Promise.all(migrationFiles.map(migration => new Promise((resolve, reject) => {
+        const filename = path.join(location, migration.filename);
+        fs.readFile(filename, 'utf-8', (err, data) => {
+            if (err) {
+                return reject(err);
+            }
+            const [up, down] = data.split(/^--\s+?down\b/im);
+            const migrationData = migration;
+            migrationData.up = up.replace(/^-- .*?$/gm, '').trim(); // Remove comments
+            migrationData.down = down ? down.trim() : ''; // and trim whitespaces
+            resolve(migrationData);
+        });
+    })));
+}
+exports.readMigrations = readMigrations;
+/**
+ * Migrates database schema to the latest version
+ */
+async function migrate(db, config = {}) {
+    config.force = config.force || false;
+    config.table = config.table || 'migrations';
+    const { force, table } = config;
+    const migrations = config.migrations
+        ? config.migrations
+        : await readMigrations(config.migrationsPath);
+    // Create a database table for migrations meta data if it doesn't exist
+    await db.run(`CREATE TABLE IF NOT EXISTS "${table}" (
+  id   INTEGER PRIMARY KEY,
+  name TEXT    NOT NULL,
+  up   TEXT    NOT NULL,
+  down TEXT    NOT NULL
+)`);
+    // Get the list of already applied migrations
+    let dbMigrations = await db.all(`SELECT id, name, up, down FROM "${table}" ORDER BY id ASC`);
+    // Undo migrations that exist only in the database but not in files,
+    // also undo the last migration if the `force` option is enabled.
+    const lastMigration = migrations[migrations.length - 1];
+    for (const migration of dbMigrations
+        .slice()
+        .sort((a, b) => Math.sign(b.id - a.id))) {
+        if (!migrations.some(x => x.id === migration.id) ||
+            (force && migration.id === lastMigration.id)) {
+            await db.run('BEGIN');
+            try {
+                await db.exec(migration.down);
+                await db.run(`DELETE FROM "${table}" WHERE id = ?`, migration.id);
+                await db.run('COMMIT');
+                dbMigrations = dbMigrations.filter(x => x.id !== migration.id);
+            }
+            catch (err) {
+                await db.run('ROLLBACK');
+                throw err;
+            }
+        }
+        else {
+            break;
+        }
+    }
+    // Apply pending migrations
+    const lastMigrationId = dbMigrations.length
+        ? dbMigrations[dbMigrations.length - 1].id
+        : 0;
+    for (const migration of migrations) {
+        if (migration.id > lastMigrationId) {
+            await db.run('BEGIN');
+            try {
+                await db.exec(migration.up);
+                await db.run(`INSERT INTO "${table}" (id, name, up, down) VALUES (?, ?, ?, ?)`, migration.id, migration.name, migration.up, migration.down);
+                await db.run('COMMIT');
+            }
+            catch (err) {
+                await db.run('ROLLBACK');
+                throw err;
+            }
+        }
+    }
+}
+exports.migrate = migrate;
+//# sourceMappingURL=migrate.js.map
+
+/***/ }),
+
+/***/ 2699:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.toSqlParams = void 0;
+/**
+ * Allows for using strings and `sql-template-strings`. Converts both to a
+ * format that's usable by the SQL methods
+ *
+ * @param sql A SQL string or `sql-template-strings` object
+ * @param params An array of parameters
+ */
+function toSqlParams(sql, params = []) {
+    if (typeof sql === 'string') {
+        return {
+            sql,
+            params
+        };
+    }
+    return {
+        sql: sql.sql,
+        params: sql.values
+    };
+}
+exports.toSqlParams = toSqlParams;
+//# sourceMappingURL=strings.js.map
 
 /***/ }),
 

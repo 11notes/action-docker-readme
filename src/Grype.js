@@ -4,8 +4,11 @@ const { Readable } = require('node:stream');
 const tar = require('tar');
 const Database = require('better-sqlite3');
 
+const sqlite3 = require('sqlite3')
+const { open } = require('sqlite');
+
 class Grype{
-  static database = false;
+  static database;
   static cutoff = 7;
 
   static getCVE(ID){
@@ -84,6 +87,18 @@ class Grype{
       Grype.#checkFileLock(files.cache.src);
       Eleven.info(`found previous grype database at ${files.cache.src}`);
       try{
+
+        try{
+          const sqlitedb = await open({
+            filename: files.cache.src,
+            driver: sqlite3.Database,
+          })
+          const result = await sqlitedb.get('SELECT * FROM id WHERE schema_version = 5');
+          Eleven.debug(result);
+        }catch(e){
+          Eleven.debug(e);
+        }
+
         Eleven.debug(`open sqlite database ${files.cache.src} with options:`);
         Eleven.debug(sqliteOptions);
         Grype.database = new Database(files.cache.src, sqliteOptions);
@@ -96,6 +111,18 @@ class Grype{
       Grype.#checkFileLock(files.db);
       Eleven.info(`found existing grype database at ${files.db}`);
       try{
+
+        try{
+          const sqlitedb = await open({
+            filename: files.db,
+            driver: sqlite3.Database,
+          })
+          const result = await sqlitedb.get('SELECT * FROM id WHERE schema_version = 5');
+          Eleven.debug(result);
+        }catch(e){
+          Eleven.debug(e);
+        }
+
         Eleven.debug(`open sqlite database ${files.db} with options:`);
         Eleven.debug(sqliteOptions);
         Grype.database = new Database(files.db, sqliteOptions);
