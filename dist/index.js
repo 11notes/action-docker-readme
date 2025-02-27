@@ -37867,23 +37867,8 @@ exports.Node = Node;
 /************************************************************************/
 var __webpack_exports__ = {};
 const Eleven = __nccwpck_require__(7248);
-const sqlite3 = __nccwpck_require__(1844)
-const { open } = __nccwpck_require__(6436);
 
 (async()=>{
-  try{
-    const sqlitedb = await open({
-      filename:'/home/runner/.cache/grype/db/5/vulnerability.db',
-      driver:sqlite3.Database,
-      mode:sqlite3.OPEN_READONLY,
-    })
-    const result = await sqlitedb.get('SELECT * FROM id WHERE schema_version = 5');
-    Eleven.debug(result);
-  }catch(e){
-    Eleven.debug(e);
-  }
-
-
   try{
     const README = __nccwpck_require__(411);
     const readme = new README();
