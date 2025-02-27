@@ -49,10 +49,10 @@ module.exports = class README{
             }
             this.#inputs[input] = await Inputs[input].apply(this, [inputs[input].value]);
           }else{
-            Eleven.warning(`input ${input} is not a valid function!`);
+            Eleven.info(`input ${input} is not a valid function!`);
           }
         }else{
-          Eleven.warning(`input ${input} is not set!`);
+          Eleven.info(`input ${input} is not set!`);
         }
       }
 
@@ -103,7 +103,7 @@ module.exports = class README{
     try{
       await Grype.init();
     }catch(e){
-      Eleven.warning(e);
+      Eleven.info(e);
     }
 
     if(this.#json?.readme?.grype?.severity > 0){

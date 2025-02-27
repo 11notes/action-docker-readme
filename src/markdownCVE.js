@@ -38,7 +38,7 @@ module.exports = class markdownCVE{
           Eleven.debug(`skipping ${ID} due to severity cutoff (${update.severity} < ${Grype.cutoff})`)
         }
       }else{
-        Eleven.warning(`could not parse ${ID}, no proper result from grype database`);
+        Eleven.info(`could not parse ${ID}, no proper result from grype database`);
       }
     }
 
@@ -49,7 +49,7 @@ module.exports = class markdownCVE{
       }
       return(this.#markdown.join("\r\n"));
     }else{
-      Eleven.warning(`could not create report for ${this.#markdown[0]}`);
+      Eleven.info(`could not create report for ${this.#markdown[0]}`);
       return('');
     }
   }

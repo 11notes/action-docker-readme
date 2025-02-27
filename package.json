@@ -4,9 +4,9 @@
   "description": "This action will create the README.md for my container image builds on github and Docker hub.",
   "main": "index.js",
   "scripts": {
-    "build": "npx ncc build index.js --license licenses.txt --target es2022 --no-cache",
+    "build": "ncc build index.js -o dist --license licenses.txt --no-cache --target es2022",
     "dev": "node index.js development",
-    "test": "node ./dist/index.js development"
+    "test": "ncc run index.js"
   },
   "repository": {
     "type": "git",

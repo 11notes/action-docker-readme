@@ -27,12 +27,12 @@ class Grype{
             query.rows = qNotNull;
           }
         }catch(e){
-          Eleven.warning(`SQLite error occured`);
+          Eleven.info(`SQLite error occured`);
         }
       }
     }catch(e){
       
-      Eleven.warning(`SQLite error occured`);
+      Eleven.info(`SQLite error occured`);
     }
 
     if(query.rows.length > 0){
@@ -91,8 +91,7 @@ class Grype{
         Grype.database = new Database(files.cache.src, sqliteOptions);
         Eleven.memory();
       }catch(e){
-        
-        Eleven.warning(e);
+        Eleven.info(e);
       }      
     }else if(existsSync(files.db) && !Grype.#checkFileLock(files.db)){
       Eleven.info(`found existing grype database at ${files.db}`);
@@ -106,17 +105,17 @@ class Grype{
           const result = await sqlitedb.get('SELECT * FROM id WHERE schema_version = 5');
           Eleven.debug(result);
         }catch(e){
-          Eleven.warning(e);
+          Eleven.info(e);
         }
 
         Eleven.debug(`open sqlite database ${files.db} with options:`);
         Eleven.debug(sqliteOptions);
         Grype.database = new Database(files.db, sqliteOptions);
       }catch(e){
-        Eleven.warning(e);
+        Eleven.info(e);
       } 
     }else{
-      Eleven.warning(`could not find any grype database, downloading ...`)
+      Eleven.info(`could not find any grype database, downloading ...`)
       try{
         const response = await fetch('https://toolbox-data.anchore.io/grype/databases/listing.json');
         if(response.ok && response.body){
@@ -136,12 +135,12 @@ class Grype{
               Eleven.debug(sqliteOptions);
               Grype.database = new Database(files.db, sqliteOptions);
             }catch(e){
-              Eleven.warning(e);
+              Eleven.info(e);
             }
           }
         }
       }catch(e){
-        Eleven.warning(e);
+        Eleven.info(e);
       }
     }
 
@@ -152,10 +151,10 @@ class Grype{
           Eleven.info(`using grype database from ${qVersion[0].build_timestamp}`);
         }
       }catch(e){
-        Eleven.warning(e);
+        Eleven.info(e);
       }
     }else{
-      Eleven.warning('grype database not a valid object');
+      Eleven.info('grype database not a valid object');
     }
   }
 
@@ -164,7 +163,7 @@ class Grype{
       closeSync(openSync(file, 'r+'));
       return(false);
     }catch(e){
-      Eleven.warning(e);
+      Eleven.info(e);
     }
     return(true);
   }

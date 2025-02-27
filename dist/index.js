@@ -27112,13 +27112,12 @@ class Grype{
             query.rows = qNotNull;
           }
         }catch(e){
-          
-          Eleven.warning(`SQLite error occured`);
+          Eleven.info(`SQLite error occured`);
         }
       }
     }catch(e){
       
-      Eleven.warning(`SQLite error occured`);
+      Eleven.info(`SQLite error occured`);
     }
 
     if(query.rows.length > 0){
@@ -27177,8 +27176,7 @@ class Grype{
         Grype.database = new Database(files.cache.src, sqliteOptions);
         Eleven.memory();
       }catch(e){
-        
-        Eleven.warning(e);
+        Eleven.info(e);
       }      
     }else if(existsSync(files.db) && !Grype.#checkFileLock(files.db)){
       Eleven.info(`found existing grype database at ${files.db}`);
@@ -27192,17 +27190,17 @@ class Grype{
           const result = await sqlitedb.get('SELECT * FROM id WHERE schema_version = 5');
           Eleven.debug(result);
         }catch(e){
-          Eleven.warning(e);
+          Eleven.info(e);
         }
 
         Eleven.debug(`open sqlite database ${files.db} with options:`);
         Eleven.debug(sqliteOptions);
         Grype.database = new Database(files.db, sqliteOptions);
       }catch(e){
-        Eleven.warning(e);
+        Eleven.info(e);
       } 
     }else{
-      Eleven.warning(`could not find any grype database, downloading ...`)
+      Eleven.info(`could not find any grype database, downloading ...`)
       try{
         const response = await fetch('https://toolbox-data.anchore.io/grype/databases/listing.json');
         if(response.ok && response.body){
@@ -27222,12 +27220,12 @@ class Grype{
               Eleven.debug(sqliteOptions);
               Grype.database = new Database(files.db, sqliteOptions);
             }catch(e){
-              Eleven.warning(e);
+              Eleven.info(e);
             }
           }
         }
       }catch(e){
-        Eleven.warning(e);
+        Eleven.info(e);
       }
     }
 
@@ -27238,10 +27236,10 @@ class Grype{
           Eleven.info(`using grype database from ${qVersion[0].build_timestamp}`);
         }
       }catch(e){
-        Eleven.warning(e);
+        Eleven.info(e);
       }
     }else{
-      Eleven.warning('grype database not a valid object');
+      Eleven.info('grype database not a valid object');
     }
   }
 
@@ -27250,7 +27248,7 @@ class Grype{
       closeSync(openSync(file, 'r+'));
       return(false);
     }catch(e){
-      Eleven.warning(e);
+      Eleven.info(e);
     }
     return(true);
   }
@@ -27294,20 +27292,20 @@ module.exports = class Inputs{
                   CVEs.push(match[1]);
                 }
               }else{
-                Eleven.warning(`sarif_file rule ${rules.id} is not a valid CVE ID!`);
+                Eleven.info(`sarif_file rule ${rules.id} is not a valid CVE ID!`);
               }
             }
           }else{
-            Eleven.warning(`sarif_file ${file} is not a grype report!`);
+            Eleven.info(`sarif_file ${file} is not a grype report!`);
           }
         }catch(e){
-          Eleven.warning(`sarif_file ${file} is not a grype report! Exception ${e.toString()}`);
+          Eleven.info(`sarif_file ${file} is not a grype report! Exception ${e.toString()}`);
         }
       }catch(e){
-        Eleven.warning(`sarif_file ${file} not a valid JSON file! Exception ${e.toString()}`);
+        Eleven.info(`sarif_file ${file} not a valid JSON file! Exception ${e.toString()}`);
       }
     }else{
-      Eleven.warning(`sarif_file ${file} not found!`);
+      Eleven.info(`sarif_file ${file} not found!`);
     }
     return(CVEs);
   }
@@ -27327,13 +27325,13 @@ module.exports = class Inputs{
           try{
             log = await run('docker', ['buildx', 'history', 'logs', id]);
           }catch(e){
-            Eleven.warning(`build_output_metadata could not call buildx history logs.`);
+            Eleven.info(`build_output_metadata could not call buildx history logs.`);
           }
         }catch(e){
-          Eleven.warning(`build_output_metadata buildx.build.ref is not set!`);
+          Eleven.info(`build_output_metadata buildx.build.ref is not set!`);
         }
       }catch(e){
-        Eleven.warning(`build_output_metadata is not a valid JSON object!`);
+        Eleven.info(`build_output_metadata is not a valid JSON object!`);
       }
     }
 
@@ -27400,10 +27398,10 @@ module.exports = class README{
             }
             this.#inputs[input] = await Inputs[input].apply(this, [inputs[input].value]);
           }else{
-            Eleven.warning(`input ${input} is not a valid function!`);
+            Eleven.info(`input ${input} is not a valid function!`);
           }
         }else{
-          Eleven.warning(`input ${input} is not set!`);
+          Eleven.info(`input ${input} is not set!`);
         }
       }
 
@@ -27454,7 +27452,7 @@ module.exports = class README{
     try{
       await Grype.init();
     }catch(e){
-      Eleven.warning(e);
+      Eleven.info(e);
     }
 
     if(this.#json?.readme?.grype?.severity > 0){
@@ -27761,7 +27759,7 @@ module.exports = class markdownCVE{
           Eleven.debug(`skipping ${ID} due to severity cutoff (${update.severity} < ${Grype.cutoff})`)
         }
       }else{
-        Eleven.warning(`could not parse ${ID}, no proper result from grype database`);
+        Eleven.info(`could not parse ${ID}, no proper result from grype database`);
       }
     }
 
@@ -27772,7 +27770,7 @@ module.exports = class markdownCVE{
       }
       return(this.#markdown.join("\r\n"));
     }else{
-      Eleven.warning(`could not create report for ${this.#markdown[0]}`);
+      Eleven.info(`could not create report for ${this.#markdown[0]}`);
       return('');
     }
   }
@@ -37874,13 +37872,13 @@ var __webpack_exports__ = {};
 const Eleven = __nccwpck_require__(7248);
 
 (async()=>{
+  Eleven.info('starting action-docker-readme');
   try{
     const README = __nccwpck_require__(411);
     const readme = new README();
     await readme.init();
   }catch(e){
-    Eleven.warning(e);
-    Eleven.debug(e);
+    Eleven.info(e);
   }
 })();
 module.exports = __webpack_exports__;
