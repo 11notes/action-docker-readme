@@ -27016,6 +27016,16 @@ const markdownCVE = __nccwpck_require__(8859);
 const core = __nccwpck_require__(8654);
 const { readdirSync, readFileSync, writeFileSync, existsSync } = __nccwpck_require__(3024);
 
+process
+  .on('unhandledRejection', (e, p) => {
+    Eleven.debug(e);
+    Eleven.error(e.toString());
+  })
+  .on('uncaughtException', e => {
+    Eleven.debug(e);
+    Eleven.error(e.toString());
+  });
+
 module.exports = class README{
   #inputs = {};
   #files = {
