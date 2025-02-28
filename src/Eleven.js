@@ -30,41 +30,24 @@ class Eleven{
 
   static debug(){
     if(Eleven.#debug){
-      if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}   ${arguments[0]}`;
-      core.info.apply(Eleven, [inspect.apply(Eleven, arguments).slice(1,-1)]);
+      core.info(Eleven.#argumentsToPrintableString.apply(Eleven, arguments));
     }
   }
 
   static info(){
-    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}   ${arguments[0]}`;
-    core.info.apply(Eleven, arguments);
+    core.info(Eleven.#argumentsToPrintableString.apply(Eleven, arguments));
   }
 
   static warning(){
-    if(arguments.length > 0 && typeof(arguments[0]) === 'string'){
-      arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}   ${arguments[0]}`;
-    }else{
-      Eleven.debug.apply(Eleven, arguments);
-    }
-    core.warning.apply(Eleven, arguments);
+    core.warning(Eleven.#argumentsToPrintableString.apply(Eleven, arguments));
   }
 
   static error(){
-    if(arguments.length > 0 && typeof(arguments[0]) === 'string') arguments[0] = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}   ${arguments[0]}`;
-    core.error.apply(Eleven, arguments);
+    core.error(Eleven.#argumentsToPrintableString.apply(Eleven, arguments));
   }
 
   static notice(){
-    core.notice.apply(Eleven, arguments);
-  }
-
-  static memory(){
-    const memoryUsage = process.memoryUsage();
-    const mb = {};
-    for(const k in memoryUsage){
-      mb[k] = parseFloat(Number(memoryUsage[k]/1024/1024).toFixed(4));
-    }
-    Eleven.debug(mb);
+    core.notice(Eleven.#argumentsToPrintableString.apply(Eleven, arguments));
   }
 
   static ref(){
@@ -86,6 +69,21 @@ class Eleven{
       case 2: return(`0${ms}`);
       default: return(ms);
     }
+  }
+
+  static #argumentsToPrintableString(){
+    const a = [];
+    const at = `${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'}).split(', ')[1]}.${Eleven.#stdoutms(new Date().getMilliseconds())}`;
+    for(const i in arguments){
+      a.push([
+        at,
+        (typeof(arguments[i]) === 'string' || typeof(arguments[i]) === 'number')
+          ? arguments[i]
+          : inspect(arguments[i]
+        ,{showHidden:false, depth:null, colors:true}),
+      ].join('   '));
+    }
+    return(a.join("\r\n"));
   }
 }
 

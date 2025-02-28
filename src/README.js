@@ -1,4 +1,5 @@
 const Eleven = require('./Eleven.js');
+const Grype = require('./Grype.js');
 const Inputs = require('./Inputs.js');
 const markdownCVE = require('./markdownCVE.js');
 
@@ -49,30 +50,37 @@ module.exports = class README{
             try{
               this.#inputs[input] = await Inputs[input].apply(this, [inputs[input].value]);
             }catch(e){
-
+              Eleven.warning(`exception while executing input function ${input}`, e);
             }
           }else{
-            Eleven.info(`input ${input} is not a valid function!`);
+            Eleven.warning(`input ${input} is not a valid function!`);
           }
         }else{
-          Eleven.info(`input ${input} is not set!`);
+          Eleven.warning(`input ${input} is not set!`);
         }
       }
 
+      await Grype.init();
       this.#loadImageFiles();
       this.#setupEnvironment();
       this.#create();
     }catch(e){
-      Eleven.info(e);
+      Eleven.warning('exception during init phase', e);
     }
   }
 
   #loadImageFiles(){
+    Eleven.debug('loading all repo files');
+    const mandatory = {
+      files:2,
+      sum:0
+    };
     readdirSync('./').forEach(file => {
       switch(true){
         case /^\.json/i.test(file):
           this.#json = JSON.parse(readFileSync(file).toString());
           this.#jsonToTemplateVariable(this.#json, 'json_');
+          mandatory.sum++;
           break;
 
         case /arch\.dockerfile/i.test(file):
@@ -85,6 +93,7 @@ module.exports = class README{
 
         case /project\.md/i.test(file):
           this.#files.readme = readFileSync(file).toString();
+          mandatory.sum++;
           break;
 
         case /compose\.yaml|compose\.yml/i.test(file):
@@ -98,23 +107,17 @@ module.exports = class README{
           break;
       }
     });
+
+    if(mandatory.sum < mandatory.files){
+      Eleven.error('repo does not have all the needed files to create a proper README.md. Aborting.');
+    }
   }
 
   #setupEnvironment(){
 
-    /*
-    try{
-      await Grype.init();
-    }catch(e){
-      Eleven.info(e);
-    }
-    */
-
     if(this.#json?.readme?.grype?.severity > 0){
-      /*
       Grype.cutoff = this.#json.readme.grype.severity;
       Eleven.debug(`set grype markdown cutoff to ${Grype.cutoff}`);
-      */
     }
     
     if(this.#inputs.sarif_file && this.#inputs.sarif_file.length > 0){

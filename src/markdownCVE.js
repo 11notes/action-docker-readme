@@ -1,5 +1,5 @@
 const Eleven = require('./Eleven.js');
-//const Grype = require('./Grype.js');
+const Grype = require('./Grype.js');
 
 module.exports = class markdownCVE{
   #CVEs = {};
@@ -30,26 +30,26 @@ module.exports = class markdownCVE{
   create(){
     const CVEs = [];
     for(const ID in this.#CVEs){
-      const update = false; //Grype.getCVE(ID);
-      if(update && update.vector.length > 0){
+      const update = Grype.getCVE(ID);
+      if(update && update.valid){
         if(update.severity >= Grype.cutoff){
           CVEs.push(update);
         }else{
           Eleven.debug(`skipping ${ID} due to severity cutoff (${update.severity} < ${Grype.cutoff})`)
         }
       }else{
-        Eleven.info(`could not parse ${ID}, no proper result from grype database`);
+        Eleven.warning(`could not parse ${ID}, no proper result from grype database`);
       }
     }
 
     if(CVEs.length > 0){
       CVEs.sort((a, b) => {return(b.severity - a.severity)});
       for(const CVE of CVEs){
-        this.#markdown.push(`| ${CVE.id} | ${this.#scoreToText(CVE.severity)} | ${this.#scoreToText(CVE.risk)} | [${CVE.vector}](https://www.first.org/cvss/calculator/3.1#${CVE.vector}) | [${CVE.id}](https://nvd.nist.gov/vuln/detail/${CVE.id}) |`);
+        this.#markdown.push(`| ${CVE.id} | ${this.#scoreToText(CVE.severity)} | ${this.#scoreToText(CVE.risk)} | [${CVE.vector}](https://www.first.org/cvss/calculator/3.1#${CVE.vector}) | [nvd.nist.gov](https://nvd.nist.gov/vuln/detail/${CVE.id}) |`);
       }
       return(this.#markdown.join("\r\n"));
     }else{
-      Eleven.info(`could not create report for ${this.#markdown[0]}`);
+      Eleven.warning(`could not create report for ${this.#markdown[0]}`);
       return('');
     }
   }

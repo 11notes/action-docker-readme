@@ -13,7 +13,7 @@ module.exports = run = async(bin, args) => {
     ps.on('close', code => {
       if(code === 0){
         if(io.stderr.length > 0 && io.stdout.length <= 0){
-          // seems binary has logged all to stderr instead of stdout with exit code 0
+          Eleven.debug('stderr has content but exit code is 0, stdout is empty, using stderr as stdout');
           resolve(io.stderr.trim());
         }else{
           resolve(io.stdout.trim());
