@@ -27006,15 +27006,19 @@ module.exports = class Inputs{
         Eleven.debug('contents of sarif report:', sarif);
         try{
           if(/grype/i.test(sarif.runs[0]?.tool?.driver?.name)){
-            for(const rules of sarif.runs[0].tool.driver?.rules){
-              const match = rules.id.match(/(CVE-\d+-\d+)/i);
-              if(match && Array.isArray(match) && match.length > 0){
-                if(!CVEs.includes(match[1])){
-                  CVEs.push(match[1]);
+            if(sarif.runs[0]?.tool?.driver?.rules && Array.isArray(sarif.runs[0].tool.driver.rules) && sarif.runs[0].tool.driver.rules.length > 0){
+              for(const rules of sarif.runs[0].tool.driver.rules){
+                const match = rules.id.match(/(CVE-\d+-\d+)/i);
+                if(match && Array.isArray(match) && match.length > 0){
+                  if(!CVEs.includes(match[1])){
+                    CVEs.push(match[1]);
+                  }
+                }else{
+                  Eleven.warning(`sarif_file rule ${rules.id} is not a valid CVE ID!`, e);
                 }
-              }else{
-                Eleven.warning(`sarif_file rule ${rules.id} is not a valid CVE ID!`, e);
               }
+            }else{
+              Eleven.warning(`sarif_file ${file} has no rules, can't process!`);
             }
           }else{
             Eleven.warning(`sarif_file ${file} is not a grype report!`);
@@ -27500,7 +27504,7 @@ module.exports = class markdownCVE{
       }
       return(this.#markdown.join("\r\n"));
     }else{
-      Eleven.warning(`could not create report for ${this.#markdown[0]}`);
+      Eleven.info(`could not create report for ${this.#markdown[0]}`);
       return('');
     }
   }
