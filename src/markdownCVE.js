@@ -49,7 +49,6 @@ module.exports = class markdownCVE{
       }
       return(this.#markdown.join("\r\n"));
     }else{
-      Eleven.info(`could not create report for ${this.#markdown[0]}`);
       return('');
     }
   }

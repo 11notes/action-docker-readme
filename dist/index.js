@@ -27014,11 +27014,11 @@ module.exports = class Inputs{
                     CVEs.push(match[1]);
                   }
                 }else{
-                  Eleven.warning(`sarif_file rule ${rules.id} is not a valid CVE ID!`, e);
+                  Eleven.info(`sarif_file rule ${rules.id} is not a valid CVE ID!`, e);
                 }
               }
             }else{
-              Eleven.warning(`sarif_file ${file} has no rules, can't process!`);
+              Eleven.info(`sarif_file ${file} has no rules, can't process!`);
             }
           }else{
             Eleven.warning(`sarif_file ${file} is not a grype report!`);
@@ -27214,14 +27214,16 @@ module.exports = class README{
         }
       }
 
-      Eleven.debug(`create markdownCVE for build_output_metadata with ${CVEs.length} CVEs`);
-      const report = new markdownCVE({
-        title:etc.title.patches,
-        text:etc.text.patches,
-        CVEs:CVEs,
-      });
+      if(CVEs.length > 0){
+        Eleven.debug(`create markdownCVE for build_output_metadata with ${CVEs.length} CVEs`);
+        const report = new markdownCVE({
+          title:etc.title.patches,
+          text:etc.text.patches,
+          CVEs:CVEs,
+        });
 
-      etc.content.patches = report.create();
+        etc.content.patches = report.create();
+      }
     }
 
     this.#tags();
@@ -27504,7 +27506,6 @@ module.exports = class markdownCVE{
       }
       return(this.#markdown.join("\r\n"));
     }else{
-      Eleven.info(`could not create report for ${this.#markdown[0]}`);
       return('');
     }
   }

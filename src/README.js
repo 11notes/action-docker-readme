@@ -140,14 +140,16 @@ module.exports = class README{
         }
       }
 
-      Eleven.debug(`create markdownCVE for build_output_metadata with ${CVEs.length} CVEs`);
-      const report = new markdownCVE({
-        title:etc.title.patches,
-        text:etc.text.patches,
-        CVEs:CVEs,
-      });
+      if(CVEs.length > 0){
+        Eleven.debug(`create markdownCVE for build_output_metadata with ${CVEs.length} CVEs`);
+        const report = new markdownCVE({
+          title:etc.title.patches,
+          text:etc.text.patches,
+          CVEs:CVEs,
+        });
 
-      etc.content.patches = report.create();
+        etc.content.patches = report.create();
+      }
     }
 
     this.#tags();

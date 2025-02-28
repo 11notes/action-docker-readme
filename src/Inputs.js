@@ -24,11 +24,11 @@ module.exports = class Inputs{
                     CVEs.push(match[1]);
                   }
                 }else{
-                  Eleven.warning(`sarif_file rule ${rules.id} is not a valid CVE ID!`, e);
+                  Eleven.info(`sarif_file rule ${rules.id} is not a valid CVE ID!`, e);
                 }
               }
             }else{
-              Eleven.warning(`sarif_file ${file} has no rules, can't process!`);
+              Eleven.info(`sarif_file ${file} has no rules, can't process!`);
             }
           }else{
             Eleven.warning(`sarif_file ${file} is not a grype report!`);
