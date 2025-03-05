@@ -100,28 +100,16 @@ class Grype{
     };
 
     if(existsSync(files.cache.src)){
-      Eleven.info(`found previous grype database at ${files.cache.src}`);
-      try{
-        Eleven.debug(`open sqlite database ${files.cache.src} with options`, sqliteOptions);
-        Grype.database = new Database(files.cache.src, sqliteOptions);
-      }catch(e){
-        Eleven.warning('exception while opending database', e);
-      }      
+      Grype.#loadDatabase(files.cache.src);    
     }else if(existsSync(files.db)){
-      Eleven.info(`found existing grype database at ${files.db}`);
-      try{
-        Eleven.debug(`open sqlite database ${files.db} with options`, sqliteOptions);
-        Grype.database = new Database(files.db, sqliteOptions);
-      }catch(e){
-        Eleven.warning('exception while opending database', e);
-      } 
+      Grype.#loadDatabase(files.db);
     }else{
       Eleven.info(`could not find any grype database, downloading ...`)
       try{
         const response = await fetch('https://toolbox-data.anchore.io/grype/databases/listing.json');
         if(response.ok && response.body){
           Readable.fromWeb(response.body).pipe(createWriteStream(files.listing));
-          const listing = JSON.parse(readFileSync(files.listing));          
+          const listing = JSON.parse(readFileSync(files.listing).toString());          
           const targz = await fetch(listing.available[5].shift().url);
           if(targz.ok && targz.body){
             Readable.fromWeb(targz.body).pipe(createWriteStream(files.targz));
@@ -129,31 +117,47 @@ class Grype{
               file:createReadStream(files.targz).path,
               sync:true
             });
-            Eleven.info(`successfully downloaded ${files.db}`);
-            try{
-              Eleven.debug(`open sqlite database ${files.db} with options`, sqliteOptions);
-              Grype.database = new Database(files.db, sqliteOptions);
-            }catch(e){
-              Eleven.warning('exception while opending database', e);
+            if(existsSync(files.db)){
+              Grype.#loadDatabase(files.db);
+            }else{
+              Eleven.warning('no grype database could be found');
             }
+          }else{
+            Eleven.warning('could not download database tar.gz', {ok:targz.ok, status:targz.status, message:targz.statusText});
           }
+        }else{
+          Eleven.warning('could not download listing.json from anchore.io', {ok:response.ok, status:response.status, message:response.statusText});
         }
       }catch(e){
         Eleven.warning('exception while downloading database', e);
       }
     }
+  }
 
-    if(Grype.database){
-      try{
-        const qVersion = Grype.database.prepare('SELECT * FROM id WHERE schema_version = 5').all();
-        if(qVersion){
-          Eleven.info(`using grype database from ${qVersion[0].build_timestamp}`);
+  static #loadDatabase(file){
+    Eleven.info(`found previous grype database at ${file}`);
+    const sqliteOptions = {
+      fileMustExist:true,
+      readonly:true,
+    };
+
+    try{
+      Eleven.debug(`open sqlite database ${file} with options`, sqliteOptions);
+      Grype.database = new Database(file, sqliteOptions);
+      if(Grype.database){
+        try{
+          const qVersion = Grype.database.prepare('SELECT * FROM id WHERE schema_version = 5').all();
+          if(qVersion){
+            Eleven.info(`using grype database from ${qVersion[0].build_timestamp}`);
+          }
+        }catch(e){
+          Eleven.warning('exception while accessing database', e);
         }
-      }catch(e){
-        Eleven.warning('exception while accessing database', e);
+      }else{
+        Eleven.warning('grype database not a valid object');
       }
-    }else{
-      Eleven.warning('grype database not a valid object');
+    }catch(e){
+      Eleven.warning('exception while opending database', e);
     }
   }
 

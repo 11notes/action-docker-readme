@@ -12,7 +12,7 @@ module.exports = class Inputs{
 
     if(existsSync(resolve(file))){
       try{
-        const sarif = JSON.parse(readFileSync(file, 'utf-8'));
+        const sarif = JSON.parse(readFileSync(resolve(file), 'utf-8'));
         Eleven.debug('contents of sarif report:', sarif);
         try{
           if(/grype/i.test(sarif.runs[0]?.tool?.driver?.name)){
