@@ -2,6 +2,7 @@ const Eleven = require('./Eleven.js');
 const Grype = require('./Grype.js');
 const Inputs = require('./Inputs.js');
 const markdownCVE = require('./markdownCVE.js');
+const YAML = require('yaml');
 
 const core = require('@actions/core');
 const { readdirSync, readFileSync, writeFileSync, existsSync } = require('node:fs');
@@ -97,7 +98,7 @@ module.exports = class README{
           break;
 
         case /compose\.yaml|compose\.yml/i.test(file):
-          this.#files.compose = readFileSync(file).toString();
+          this.#compose(file);
           break;
 
         case /\.github/i.test(file):
@@ -239,6 +240,18 @@ module.exports = class README{
     }
   }
 
+  #compose(file){
+    let compose = readFileSync(file).toString();
+    const yaml = YAML.parse(compose);
+    for(const service in yaml.services){
+      if(service == this.#json.name){
+        compose = compose.replace(yaml.services[service].image, `${this.#json.image}:${this.#json.semver.version}`);
+      }
+    }
+    writeFileSync(file, compose);
+    this.#files.compose = compose;
+  }
+
   #create(){
     const output = {
       markdown:'',
@@ -302,7 +315,6 @@ module.exports = class README{
       writeFileSync('./TREADME.md', output.markdown);
     }
   }
-
 
   // helper functions
   #jsonToTemplateVariable(json, prefix = ''){
