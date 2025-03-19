@@ -27257,6 +27257,7 @@ module.exports = class README{
     for(const k in this.#json?.readme?.built){
       built.push(`* [${k}](${this.#json.readme.built[k]})`);
     }
+    built.push(`* [11notes/util](https://github.com/11notes/docker-util)`);
     if(built.length > 0){
       etc.content.built = `${etc.title.built}\r\n${built.join("\r\n")}`;
     }
@@ -27276,7 +27277,7 @@ module.exports = class README{
       etc.content.patches,
       etc.content.sarif,
       `# ElevenNotes™️\r\nThis image is provided to you at your own risk. Always make backups before updating an image to a different version. Check the [releases](https://github.com/11notes/docker-${this.#json.name}/releases) for breaking changes. If you have any problems with using this image simply raise an [issue](https://github.com/11notes/docker-${this.#json.name}/issues), thanks. If you have a question or inputs please create a new [discussion](https://github.com/11notes/docker-${this.#json.name}/discussions) instead of an issue. You can find all my other repositories on [github](https://github.com/11notes?tab=repositories).`,
-      `*created ${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich'})} (CET)*`,
+      `*created ${new Date().toLocaleString('de-CH', {timeZone:'Europe/Zurich', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'})} (CET)*`,
     ];
   }
 
