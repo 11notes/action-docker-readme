@@ -166,12 +166,11 @@ module.exports = class README{
     }
 
     // check for parent image
-    this.#env['distro_icon'] = '⛰️ ';
     switch(true){
-      case /scratch/i.test(this.#json?.readme?.parent?.image): this.#env['distro_icon'] = '🇨🇭 '; this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/scratch'; break;
+      case /scratch/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/scratch'; break;
       case /11notes\/alpine\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/r/11notes/alpine'; break;
       case /11notes\/kms\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/r/11notes/kms'; break;
-      case /ubuntu\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['distro_icon'] = '🍟 '; this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/ubuntu'; break;
+      case /ubuntu\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/ubuntu'; break;
     }
 
     // check for built
@@ -188,13 +187,17 @@ module.exports = class README{
       etc.content.built = '';
     }
 
+    if(this.#json?.distroless){
+      this.#distroLess();
+    }
+
     // finalize env
     this.#jsonToTemplateVariable(etc);
 
     // setup readme
     this.#header = [
       '![banner](https://github.com/11notes/defaults/blob/main/static/img/banner.png?raw=true)',
-      `# \${{ distro_icon }}\${{ json_name }}\r\n${etc.content.shields}`,
+      `# \${{ json_name }}\r\n${etc.content.shields}`,
       this.#json.readme.description,
       etc.content.tags,
     ];
@@ -314,7 +317,7 @@ module.exports = class README{
     // write file
     if(!existsSync('.development')){
       Eleven.info('writing updated README.md');
-      writeFileSync('./README.md', output.markdown);
+      this.#multiWrite(output.markdown);
     }else if(Eleven.get('debug')){
       Eleven.debug('writing updated debug TREADME.md');
       writeFileSync('./TREADME.md', output.markdown);
@@ -334,6 +337,20 @@ module.exports = class README{
         }
       }
     }
+  }
+
+  #distroLess(){
+    etc.content.parent = `${etc.title.parent}\r\n> [!IMPORTANT]\r\nThis image is not based on another image but uses [scratch](https://hub.docker.com/_/scratch) as the starting layer.`;
+    if(this.#json.name !== 'alpine'){
+      etc.content.parent += ' It is distroless and contains no shell or any other tools that could be a potential attack vector.';
+    }
+  }
+
+  #multiWrite(readme){
+    const readmeGithub = readme.replace(/\$\{\{ github:(.+) \}\}/ig, '$1');
+    const readmeDocker = readme.replace(/\$\{\{ github:(.+) \}\}/ig, '');
+    writeFileSync('./README.md', readmeGithub);
+    writeFileSync('./README_DOCKER.md', readmeDocker);
   }
 }
 
@@ -364,10 +381,11 @@ const etc = {
       '![version](https://img.shields.io/docker/v/${{ json_image }}/${{ json_semver_version }}?color=eb7a09)',
       '![pulls](https://img.shields.io/docker/pulls/${{ json_image }}?color=2b75d6)',
       '[<img src="https://img.shields.io/github/issues/11notes/docker-${{ json_name }}?color=7842f5">](https://github.com/11notes/docker-${{ json_name }}/issues)',
+      '![swiss made](https://img.shields.io/badge/CH-Swiss_Made-DA291C)',
     ].join("")}`,
-    tips:`\${{ title_tips }}\r\n${[
-      '* Use a reverse proxy like Traefik, Nginx, HAproxy to terminate TLS and to protect your endpoints',
-      '* Use Let’s Encrypt DNS-01 challenge to obtain valid SSL certificates for your services'
+    tips:`\${{ title_tips }}\r\n\${{ github:> [!TIP] }}\r\n${[
+      '${{ github:> }}* Use a reverse proxy like Traefik, Nginx, HAproxy to terminate TLS and to protect your endpoints',
+      '${{ github:> }}* Use Let’s Encrypt DNS-01 challenge to obtain valid SSL certificates for your services'
     ].join("\r\n")}`,
     unraid:"${{ title_unraid }}\r\nThis image supports unraid by default. Simply add **-unraid** to any tag and the image will run as 99:100 instead of 1000:1000 causing no issues on unraid. Enjoy.",
     build:"${{ title_build }}\r\n```dockerfile\r\n${{ include: ./build.dockerfile }}\r\n```",
