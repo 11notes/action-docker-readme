@@ -168,7 +168,7 @@ module.exports = class README{
     // check for parent image
     this.#env['distro_icon'] = '⛰️ ';
     switch(true){
-      case /scratch/i.test(this.#json?.readme?.parent?.image): this.#env['distro_icon'] = ''; this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/scratch'; break;
+      case /scratch/i.test(this.#json?.readme?.parent?.image): this.#env['distro_icon'] = '🇨🇭 '; this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/scratch'; break;
       case /11notes\/alpine\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/r/11notes/alpine'; break;
       case /11notes\/kms\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/r/11notes/kms'; break;
       case /ubuntu\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['distro_icon'] = '🍟 '; this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/ubuntu'; break;
@@ -179,9 +179,13 @@ module.exports = class README{
     for(const k in this.#json?.readme?.built){
       built.push(`* [${k}](${this.#json.readme.built[k]})`);
     }
-    built.push(`* [11notes/util](https://github.com/11notes/docker-util)`);
+    if(!this.#json?.distroless){
+      built.push(`* [11notes/util](https://github.com/11notes/docker-util)`);
+    }
     if(built.length > 0){
       etc.content.built = `${etc.title.built}\r\n${built.join("\r\n")}`;
+    }else{
+      etc.content.built = '';
     }
 
     // finalize env
@@ -323,7 +327,11 @@ module.exports = class README{
       if(typeof(json[k]) === 'object'){
         this.#jsonToTemplateVariable(json[k], `${prefix}${k}_`);
       }else{
-        this.#env[`${prefix}${k.toLowerCase()}`] = json[k];
+        if(k === 'name'){
+          this.#env[`${prefix}${k.toLowerCase()}`] = `${json[k]}`.toUpperCase();
+        }else{
+          this.#env[`${prefix}${k.toLowerCase()}`] = json[k];
+        }
       }
     }
   }
@@ -332,6 +340,7 @@ module.exports = class README{
 const etc = {
   title:{
     synopsis:'# SYNOPSIS 📖',
+    uvp:'# UNIQUE VALUE PROPOSITION 💶',
     volumes:'# VOLUMES 📁',
     built:'# BUILT WITH 🧰',
     build:'# BUILD 🚧',
@@ -364,6 +373,7 @@ const etc = {
     build:"${{ title_build }}\r\n```dockerfile\r\n${{ include: ./build.dockerfile }}\r\n```",
     tags:'',
     synopsis:'\${{ title_synopsis }}\r\n**What can I do with this?**',
+    uvp:'\${{ title_uvp }}\r\n**Why should I run this image and not the other image(s) that already exist?**',
     environment:`\${{ title_environment }}\r\n${[
       '| Parameter | Value | Default |',
       '| --- | --- | --- |',
