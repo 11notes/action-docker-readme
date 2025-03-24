@@ -27256,7 +27256,7 @@ module.exports = class README{
     for(const k in this.#json?.readme?.built){
       built.push(`* [${k}](${this.#json.readme.built[k]})`);
     }
-    if(!this.#json?.distroless){
+    if(!this.#json?.readme?.distroless){
       built.push(`* [11notes/util](https://github.com/11notes/docker-util)`);
     }
     if(built.length > 0){
@@ -27265,7 +27265,7 @@ module.exports = class README{
       etc.content.built = '';
     }
 
-    if(this.#json?.distroless){
+    if(this.#json?.readme?.distroless){
       this.#distroLess();
     }
 
@@ -27418,7 +27418,7 @@ module.exports = class README{
   }
 
   #distroLess(){
-    etc.content.parent = `${etc.title.parent}\r\n> [!IMPORTANT]\r\nThis image is not based on another image but uses [scratch](https://hub.docker.com/_/scratch) as the starting layer.`;
+    etc.content.parent = `${etc.title.parent}\r\n\${{ github:> [!IMPORTANT] }}\r\nThis image is not based on another image but uses [scratch](https://hub.docker.com/_/scratch) as the starting layer.`;
     if(this.#json.name !== 'alpine'){
       etc.content.parent += ' It is distroless and contains no shell or any other tools that could be a potential attack vector.';
     }
