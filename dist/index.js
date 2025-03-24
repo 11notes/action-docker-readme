@@ -27459,8 +27459,8 @@ const etc = {
       '![version](https://img.shields.io/docker/v/${{ json_image }}/${{ json_semver_version }}?color=eb7a09)',
       '![pulls](https://img.shields.io/docker/pulls/${{ json_image }}?color=2b75d6)',
       '[<img src="https://img.shields.io/github/issues/11notes/docker-${{ json_name }}?color=7842f5">](https://github.com/11notes/docker-${{ json_name }}/issues)',
-      '![swiss made](https://img.shields.io/badge/CH-Swiss_Made-DA291C)',
-    ].join("")}`,
+      '![swiss_made](https://img.shields.io/badge/Swiss_Made-FFFFFF?labelColor=FF0000&logo=data:image/svg%2bxml;base64,PHN2ZyB2ZXJzaW9uPSIxIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDMyIDMyIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Im0wIDBoMzJ2MzJoLTMyeiIgZmlsbD0iI2YwMCIvPjxwYXRoIGQ9Im0xMyA2aDZ2N2g3djZoLTd2N2gtNnYtN2gtN3YtNmg3eiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==)',
+    ].join("![5px](https://github.com/11notes/defaults/blob/main/static/img/transparent5x2px.png?raw=true)")}`,
     tips:`\${{ title_tips }}\r\n\${{ github:> [!TIP] }}\r\n${[
       '${{ github:> }}* Use a reverse proxy like Traefik, Nginx, HAproxy to terminate TLS and to protect your endpoints',
       '${{ github:> }}* Use Let’s Encrypt DNS-01 challenge to obtain valid SSL certificates for your services'
