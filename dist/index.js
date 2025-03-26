@@ -27450,6 +27450,7 @@ const etc = {
     tags:'# MAIN TAGS 🏷️',
     defaults:'# DEFAULT SETTINGS 🗃️',
     sarif:'# SECURITY VULNERABILITIES REPORT ⚡',
+    caution:'# CAUTION ⚠️',
   },
   
   content:{
