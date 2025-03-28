@@ -27425,7 +27425,7 @@ module.exports = class README{
     }
     etc.content.parent = `${etc.title.parent}\r\n\${{ github:> [!IMPORTANT] }}\r\n\${{ github:> }}This image is not based on another image but uses [scratch](https://hub.docker.com/_/scratch) as the starting layer.`;
     if(this.#json?.readme?.distroless?.layers){
-      etc.content.parent += "\r\n${{ github:> }}\r\n${{ github:> }}The image consists of the following distroless layers that were added:\r\n";
+      etc.content.parent += "\r\n${{ github:> }}The image consists of the following distroless layers that were added:\r\n";
       const layerMarkup = [];
       for(const layer of this.#json.readme.distroless.layers){
         if(distrolessLayers[layer]){
