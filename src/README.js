@@ -340,9 +340,19 @@ module.exports = class README{
   }
 
   #distroLess(){
-    etc.content.parent = `${etc.title.parent}\r\n\${{ github:> [!IMPORTANT] }}\r\nThis image is not based on another image but uses [scratch](https://hub.docker.com/_/scratch) as the starting layer.`;
-    if(this.#json.name !== 'alpine'){
-      etc.content.parent += ' It is distroless and contains no shell or any other tools that could be a potential attack vector.';
+    const distrolessLayers = {
+      "11notes/distroless":["https://github.com/11notes/docker-distroless/blob/master/arch.dockerfile", "contains users, timezones and Root CA certificates"],
+      "11notes/distroless:dnslookup":["https://github.com/11notes/docker-distroless/blob/master/dnslookup.dockerfile", "app to execute DNS queries"],
+      "11notes/distroless:curl":["https://github.com/11notes/docker-distroless/blob/master/curl.dockerfile", "app to execute HTTP or UNIX requests"],
+    }
+    etc.content.parent = `${etc.title.parent}\r\n\${{ github:> [!IMPORTANT] }}\r\n\${{ github:> }}This image is not based on another image but uses [scratch](https://hub.docker.com/_/scratch) as the starting layer.`;
+    if(this.#json?.readme?.distroless?.layers){
+      etc.content.parent += "${{ github:> }}\r\n${{ github:> }}\r\n${{ github:> }}The image consists of the following distroless layers that were added:\r\n";
+      const layerMarkup = [];
+      for(const layer in this.#json.readme.distroless.layers){
+        layerMarkup.puhs(`\${{ github:> }}* [${layer}](${this.#json.readme.distroless.layers[layer][0]}) - ${this.#json.readme.distroless.layers[layer][1]}`);
+      }
+      etc.content.parent += layerMarkup.join("\r\n");
     }
   }
 
