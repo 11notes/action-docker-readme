@@ -27323,7 +27323,7 @@ module.exports = class README{
         `docker pull quay.io/${this.#json.image}:${(this.#json?.semver?.version || 'latest')}`,
       ];
       
-      etc.content.tags = `${etc.title.tags}\r\n${etc.text.tags}\r\n\r\n${list.join("\r\n")}\r\n\r\n${etc.title.repositories}\r\n${"```"+repos.join("\r\n")+"```"}`;
+      etc.content.tags = `${etc.title.tags}\r\n${etc.text.tags}\r\n\r\n${list.join("\r\n")}\r\n\r\n${etc.title.repositories}\r\n${"```\r\n"+repos.join("\r\n")+"\r\n```"}`;
 
       if(hasUnraid){
         Eleven.info('add UNRAID to README.md');
@@ -27471,6 +27471,7 @@ const etc = {
     defaults:'# DEFAULT SETTINGS 🗃️',
     sarif:'# SECURITY VULNERABILITIES REPORT ⚡',
     caution:'# CAUTION ⚠️',
+    repositories:'# REPOSITORIES ☁️',
   },
   
   content:{
