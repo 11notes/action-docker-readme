@@ -80,6 +80,10 @@ module.exports = class README{
       switch(true){
         case /^\.json/i.test(file):
           this.#json = JSON.parse(readFileSync(file).toString());
+          // set version to latest if not set (like distroless)
+          if(!this.#json?.semver?.version){
+            this.#json.semver = {version:'latest'};
+          }
           this.#jsonToTemplateVariable(this.#json, 'json_');
           mandatory.sum++;
           break;
