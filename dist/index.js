@@ -27452,7 +27452,7 @@ module.exports = class README{
     const readmeGithub = readme.replace(/\$\{\{ github:(.+) \}\}/ig, '$1');
     const readmeDocker = readme.replace(/\$\{\{ github:(.+) \}\}/ig, '');
     writeFileSync('./README.md', readmeGithub);
-    writeFileSync('./README_DOCKER.md', readmeDocker);
+    writeFileSync('./README_NONGITHUB.md', readmeDocker);
   }
 }
 
