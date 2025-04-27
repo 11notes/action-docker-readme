@@ -27454,6 +27454,7 @@ module.exports = class README{
 
   async #comparison(){
     const buildIds = [...(process.env?.DOCKER_IMAGE_ARGUMENTS.replace(/[\n\r]+/ig, '')).matchAll(/APP_UID=(\d+).*APP_GID=(\d+)/img)];
+    Eleven.info(buildIds);
     const markdownTable = [
       ['image', process.env?.WORKFLOW_CREATE_COMPARISON_IMAGE, process.env?.WORKFLOW_CREATE_COMPARISON_FOREIGN_IMAGE],
       ['image size on disk', '', ''],
@@ -27461,19 +27462,20 @@ module.exports = class README{
       ['distroless?', ((this.#json?.readme?.distroless) ? '✅' : '❌'), '❌']
     ];
     if(existsSync('./comparison.size0.log') && existsSync('./comparison.size1.log')){
-      markdownTable[1][0] = readFileSync('./comparison.size0.log').toString();
-      markdownTable[1][1] = readFileSync('./comparison.size1.log').toString();
+      markdownTable[1][1] = readFileSync('./comparison.size0.log').toString();
+      markdownTable[1][2] = readFileSync('./comparison.size1.log').toString();
     }
     if(existsSync('./comparison.id.log')){
       const idLog = readFileSync('./comparison.id.log').toString();
       const ids = [...idLog.matchAll(/uid=(\d+).*gid=(\d+)/ig)];
-      if(ids && ids.length > 0){
+      Eleven.info(ids);
+      if(Array.isArray(ids) && ids.length > 0){
         markdownTable[2][2] = `${ids[1]}:${ids[2]}`; 
       }else if(/executable file not found/i.test(idLog)){
         markdownTable[3][2] = '✅';
       }
     }
-    let markdown = `| ${markdownTable[0][0]} | ${markdownTable[0][1]} | ${markdownTable[0][2]} |\r\n| --- | --- | --- |\r\n`;
+    let markdown = `| ${markdownTable[0][0]} | ${markdownTable[0][1]} | ${markdownTable[0][2]} |\r\n| ---: | :---: | :---: |\r\n`;
     for(let i=1; i<markdownTable.length; i++){
       markdown += `| ${markdownTable[i][0]} | ${markdownTable[i][1]} | ${markdownTable[i][2]} |\r\n`;
     }
