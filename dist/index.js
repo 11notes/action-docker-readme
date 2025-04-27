@@ -27467,6 +27467,7 @@ module.exports = class README{
     if(existsSync('./comparison.id.log')){
       const idLog = readFileSync('./comparison.id.log').toString();
       const ids = [...idLog.matchAll(/uid=(\d+).*gid=(\d+)/ig)];
+      Eleven.info(ids);
       if(Array.isArray(ids) && ids.length > 0){
         markdownTable[2][2] = `${ids[0][1]}:${ids[0][2]}`; 
       }else if(/executable file not found/i.test(idLog)){
