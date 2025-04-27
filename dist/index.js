@@ -27453,10 +27453,31 @@ module.exports = class README{
   }
 
   async #comparison(){
-    if(existsSync('./comparison.size.log')){
-      const sizeLog = readFileSync('./comparison.size.log').toString();
-      etc.content.comparison += ("Difference in image size:\r\n```\r\n" + sizeLog + "\r\n```");
+    const buildIds = [...(process.env?.DOCKER_IMAGE_ARGUMENTS.replace(/[\n\r]+/ig, '')).matchAll(/APP_UID=(\d+).*APP_GID=(\d+)/img)];
+    const markdownTable = [
+      ['image', process.env?.WORKFLOW_CREATE_COMPARISON_IMAGE, process.env?.WORKFLOW_CREATE_COMPARISON_FOREIGN_IMAGE],
+      ['image size on disk', '', ''],
+      ['process UID/GID', `${buildIds[1]}/${buildIds[2]}`, '?/?'],
+      ['distroless?', ((this.#json?.readme?.distroless) ? '✅' : '❌'), '❌']
+    ];
+    if(existsSync('./comparison.size0.log') && existsSync('./comparison.size1.log')){
+      markdownTable[1][0] = readFileSync('./comparison.size0.log').toString();
+      markdownTable[1][1] = readFileSync('./comparison.size1.log').toString();
     }
+    if(existsSync('./comparison.id.log')){
+      const idLog = readFileSync('./comparison.id.log').toString();
+      const ids = [...idLog.matchAll(/uid=(\d+).*gid=(\d+)/ig)];
+      if(ids && ids.length > 0){
+        markdownTable[2][2] = `${ids[1]}:${ids[2]}`; 
+      }else if(/executable file not found/i.test(idLog)){
+        markdownTable[3][2] = '✅';
+      }
+    }
+    let markdown = `| ${markdownTable[0][0]} | ${markdownTable[0][1]} | ${markdownTable[0][2]} |\r\n| --- | --- | --- |\r\n`;
+    for(let i=1; i<markdownTable.length; i++){
+      markdown += `| ${markdownTable[i][0]} | ${markdownTable[i][1]} | ${markdownTable[i][2]} |\r\n`;
+    }
+    etc.content.comparison += markdown;
   }
 
   #multiWrite(readme){
@@ -27526,7 +27547,7 @@ const etc = {
     source:"${{ title_source }}\r\n* [${{ json_image }}](https://github.com/11notes/docker-${{ json_name }})",
     sarif:'',
     patches:'',
-    comparison:"${{ title_comparison }}\r\nBelow you find a comparison between this image and ${{ json_readme_comparison_image }}.\r\n\r\n",
+    comparison:"${{ title_comparison }}\r\nBelow you find a comparison between this image and the most used one.\r\n\r\n",
   },
   text:{
     tags:'These are the main tags for the image. There is also a tag for each commit and its shorthand sha256 value.',
