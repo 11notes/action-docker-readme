@@ -195,6 +195,10 @@ module.exports = class README{
       this.#distroLess();
     }
 
+    if(this.#json?.readme?.comparison){
+      this.#comparison();
+    }
+
     // finalize env
     this.#jsonToTemplateVariable(etc);
 
@@ -370,6 +374,13 @@ module.exports = class README{
     }
   }
 
+  async #comparison(){
+    if(existsSync('./comparison.size.log')){
+      const sizeLog = readFileSync('./comparison.size.log').toString();
+      etc.content.comparison += ("Difference in image size:\r\n```\r\n" + sizeLog + "\r\n```");
+    }
+  }
+
   #multiWrite(readme){
     const readmeGithub = readme.replace(/\$\{\{ github:(.+) \}\}/ig, '$1');
     const readmeDocker = readme.replace(/\$\{\{ github:(.+) \}\}/ig, '');
@@ -382,6 +393,7 @@ const etc = {
   title:{
     synopsis:'# SYNOPSIS 📖',
     uvp:'# UNIQUE VALUE PROPOSITION 💶',
+    comparison:'# COMPARISON 🏁',
     volumes:'# VOLUMES 📁',
     built:'# BUILT WITH 🧰',
     build:'# BUILD 🚧',
@@ -436,6 +448,7 @@ const etc = {
     source:"${{ title_source }}\r\n* [${{ json_image }}](https://github.com/11notes/docker-${{ json_name }})",
     sarif:'',
     patches:'',
+    comparison:"${{ title_comparison }}\r\nBelow you find a comparison between this image and ${{ json_readme_comparison_image }}.\r\n\r\n",
   },
   text:{
     tags:'These are the main tags for the image. There is also a tag for each commit and its shorthand sha256 value.',
