@@ -380,7 +380,8 @@ module.exports = class README{
       ['**image**', process.env?.WORKFLOW_CREATE_COMPARISON_IMAGE, process.env?.WORKFLOW_CREATE_COMPARISON_FOREIGN_IMAGE],
       ['**image size on disk**', '?', '?'],
       ['**process UID/GID**', `${buildIds[0][1]}/${buildIds[0][2]}`, '?/?'],
-      ['**distroless?**', ((this.#json?.readme?.distroless) ? '✅' : '❌'), '❌']
+      ['**distroless?**', ((this.#json?.readme?.distroless) ? '✅' : '❌'), '❌'],
+      ['**rootless?**', '✅', '❌']
     ];
     if(existsSync('./comparison.size0.log') && existsSync('./comparison.size1.log')){
       markdownTable[1][1] = readFileSync('./comparison.size0.log').toString().replace(/[\r\n\s]+/ig, '');
@@ -391,12 +392,15 @@ module.exports = class README{
       const ids = [...idLog.matchAll(/uid=(\d+).*gid=(\d+)/ig)];
       Eleven.info(ids);
       if(Array.isArray(ids) && ids.length > 0){
-        markdownTable[2][2] = `${ids[0][1]}:${ids[0][2]}`; 
+        markdownTable[2][2] = `${ids[0][1]}/${ids[0][2]}`; 
+        if(parseInt(ids[0][1]) > 0 && parseInt(ids[0][2]) > 0){
+          markdownTable[4][2] = '✅';
+        }
       }else if(/executable file not found/i.test(idLog)){
         markdownTable[3][2] = '✅';
       }
     }
-    let markdown = `| ${markdownTable[0][0]}![128px](https://github.com/11notes/defaults/blob/main/static/img/transparent128x1px.png?raw=true) | ${markdownTable[0][1]} | ${markdownTable[0][2]} |\r\n| ---: | :---: | :---: |\r\n`;
+    let markdown = `| ![128px](https://github.com/11notes/defaults/blob/main/static/img/transparent128x1px.png?raw=true)${markdownTable[0][0]} | ${markdownTable[0][1]} | ${markdownTable[0][2]} |\r\n| ---: | :---: | :---: |\r\n`;
     for(let i=1; i<markdownTable.length; i++){
       markdown += `| ${markdownTable[i][0]} | ${markdownTable[i][1]} | ${markdownTable[i][2]} |\r\n`;
     }
@@ -470,7 +474,7 @@ const etc = {
     source:"${{ title_source }}\r\n* [${{ json_image }}](https://github.com/11notes/docker-${{ json_name }})",
     sarif:'',
     patches:'',
-    comparison:"${{ title_comparison }}\r\nBelow you find a comparison between this image and the most used one.\r\n\r\n",
+    comparison:"${{ title_comparison }}\r\nBelow you find a comparison between this image and the most used or original one.\r\n\r\n",
   },
   text:{
     tags:'These are the main tags for the image. There is also a tag for each commit and its shorthand sha256 value.',
