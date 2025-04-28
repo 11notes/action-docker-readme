@@ -27474,11 +27474,7 @@ module.exports = class README{
         markdownTable[3][2] = '✅';
       }
     }
-    const png = {
-      full:'![512px](https://github.com/11notes/defaults/blob/main/static/img/transparent512x1px.png?raw=true)',
-      gap:'![16px](https://github.com/11notes/defaults/blob/main/static/img/transparent16x1px.png?raw=true)'
-    }
-    let markdown = `| ${markdownTable[0][0]}${png.full} | ${png.gap}${markdownTable[0][1]}${png.gap} | ${png.gap}${markdownTable[0][2]}${png.gap} |\r\n| ---: | :---: | :---: |\r\n`;
+    let markdown = `| ${markdownTable[0][0]}![128px](https://github.com/11notes/defaults/blob/main/static/img/transparent128x1px.png?raw=true) | ${markdownTable[0][1]} | ${markdownTable[0][2]} |\r\n| ---: | :---: | :---: |\r\n`;
     for(let i=1; i<markdownTable.length; i++){
       markdown += `| ${markdownTable[i][0]} | ${markdownTable[i][1]} | ${markdownTable[i][2]} |\r\n`;
     }
