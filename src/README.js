@@ -207,7 +207,6 @@ module.exports = class README{
       '![banner](https://github.com/11notes/defaults/blob/main/static/img/banner.png?raw=true)',
       `# \${{ json_name }}\r\n${etc.content.shields}`,
       this.#json.readme.description,
-      etc.content.tags,
     ];
 
     this.#footer = [
@@ -346,6 +345,9 @@ module.exports = class README{
     for(const k in this.#env){
       output.markdown = output.markdown.replace(new RegExp(`\\\${{ ${String(k).toLowerCase()} }}`, 'ig'), this.#env[k]);
     }
+
+    // add last minute stuff
+    output.markdown.replace(etc.title.defaults, `${etc.content.tags}\r\n\r\n${etc.title.defaults}`);
 
     // write file
     if(!existsSync('.development')){
