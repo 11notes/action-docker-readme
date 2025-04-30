@@ -27299,12 +27299,14 @@ module.exports = class README{
   #tags(){
     let tags = [];
     let hasUnraid = false;
+    let hasLatest = false;
+    let hasStable = false;
     tags.push(this.#json.semver.version);
     for(const tag in this.#json.semver){
       if(tag !== 'version'){
         switch(true){
-          case /stable/i.test(tag): tags.push('stable'); break;
-          case /latest/i.test(tag): tags.push('latest'); break;
+          case /stable/i.test(tag): tags.push('stable'); hasStable = true; break;
+          case /latest/i.test(tag): tags.push('latest'); hasLatest = true; break;
         }
       }
     }
@@ -27332,6 +27334,18 @@ module.exports = class README{
       ];
       
       etc.content.tags = `${etc.title.tags}\r\n${etc.text.tags}\r\n\r\n${list.join("\r\n")}\r\n\r\n${etc.title.repositories}\r\n${"```\r\n"+repos.join("\r\n")+"\r\n```"}`;
+
+      if(!hasLatest && this.#json.semver.version !== 'latest'){
+        const asemver = this.#json.semver.version.split('.');
+        if(asemver.length >= 2){
+          const shortSemver = (
+            (asemver.length === 3) ? `${asemver[0]} or ${asemver[0]}.${asemver[1]}` : `${asemver[0]}`
+          );
+          etc.content.tags += '**There is no latest tag, how am I supposed to use this image at all?** It is of my opinion that the ```:latest``` tag is super dangerous. Many times, I’ve introduced **breaking** changes to my images. This would have messed up everything for some people. If you don’t want to change the tag to the latest [semver](https://semver.org/), simply use the short versions of [semver](https://semver.org/). ';
+          etc.content.tags += `Instead of using ${this.#json.semver.version} you can use ${shortSemver}. `;
+          etc.content.tags += 'Since on each new version these tags are updated to the latest version of the software, using them is identical to using ```:latest``` but at least fixed to a major or minor version.';
+        }
+      }
 
       if(hasUnraid){
         Eleven.info('add UNRAID to README.md');
