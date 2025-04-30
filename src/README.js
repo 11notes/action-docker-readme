@@ -267,7 +267,7 @@ module.exports = class README{
             (semver.length === 3) ? `${code}:${semver[0]}${code} or ${code}:${semver[0]}.${semver[1]}${code}` : `${code}:${semver[0]}${code}`
           );
           const latest = '```:latest```';
-          tags.markdown.push(`### There is no latest tag, what am I supposed to do about updates?\r\nIt is of my opinion that the ${latest} tag is super dangerous. Many times, I’ve introduced **breaking** changes to my images. This would have messed up everything for some people. If you don’t want to change the tag to the latest [semver](https://semver.org/), simply use the short versions of [semver](https://semver.org/). Instead of using ${this.#json.semver.version} you can use ${semverList}. Since on each new version these tags are updated to the latest version of the software, using them is identical to using ${latest} but at least fixed to a major or minor version.`);
+          tags.markdown.push(`### There is no latest tag, what am I supposed to do about updates?\r\nIt is of my opinion that the ${latest} tag is super dangerous. Many times, I’ve introduced **breaking** changes to my images. This would have messed up everything for some people. If you don’t want to change the tag to the latest [semver](https://semver.org/), simply use the short versions of [semver](https://semver.org/). Instead of using ${this.#json.semver.version} you can use ${code}:${semverList}${code}. Since on each new version these tags are updated to the latest version of the software, using them is identical to using ${latest} but at least fixed to a major or minor version.`);
         }
       }
 
