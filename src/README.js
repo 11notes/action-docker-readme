@@ -347,7 +347,7 @@ module.exports = class README{
     }
 
     // add last minute stuff
-    output.markdown.replace(etc.title.defaults, `${etc.content.tags}\r\n\r\n${etc.title.defaults}`);
+    output.markdown = output.markdown.replace(etc.title.source, `${etc.content.tags}\r\n\r\n${etc.title.source}`);
 
     // write file
     if(!existsSync('.development')){
