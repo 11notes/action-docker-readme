@@ -404,9 +404,13 @@ module.exports = class README{
       ['**distroless?**', ((this.#json?.readme?.distroless) ? '✅' : '❌'), '❌'],
       ['**rootless?**', '✅', '❌']
     ];
-    if(existsSync('./comparison.size0.log') && existsSync('./comparison.size1.log')){
+    if(existsSync('./comparison.size0.log')){
       markdownTable[1][1] = readFileSync('./comparison.size0.log').toString().replace(/[\r\n\s]+/ig, '');
-      markdownTable[1][2] = readFileSync('./comparison.size1.log').toString().replace(/[\r\n\s]+/ig, '');
+      if(existsSync('./comparison.size1.log')){
+        markdownTable[1][2] = readFileSync('./comparison.size1.log').toString().replace(/[\r\n\s]+/ig, '');
+      }else{
+        markdownTable[1][2] = "no image found (provider too slow ...)"
+      }
     }
     if(existsSync('./comparison.id.log')){
       const idLog = readFileSync('./comparison.id.log').toString();
@@ -421,7 +425,7 @@ module.exports = class README{
         markdownTable[3][2] = '✅';
       }
     }
-    let markdown = `| ![128px](https://github.com/11notes/defaults/blob/main/static/img/transparent128x1px.png?raw=true)${markdownTable[0][0]} | ${markdownTable[0][1]} | ${markdownTable[0][2]} |\r\n| ---: | :---: | :---: |\r\n`;
+    let markdown = `| ${markdownTable[0][0]} | ${markdownTable[0][1]} | ${markdownTable[0][2]} |\r\n| ---: | :---: | :---: |\r\n`;
     for(let i=1; i<markdownTable.length; i++){
       markdown += `| ${markdownTable[i][0]} | ${markdownTable[i][1]} | ${markdownTable[i][2]} |\r\n`;
     }
