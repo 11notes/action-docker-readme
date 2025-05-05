@@ -350,6 +350,11 @@ module.exports = class README{
     // add last minute stuff
     output.markdown = output.markdown.replace(etc.title.source, `${etc.content.tags}\r\n\r\n${etc.title.source}`);
 
+    // replace all variables one more time because of last minute stuff that could have variable
+    for(const k in this.#env){
+      output.markdown = output.markdown.replace(new RegExp(`\\\${{ ${String(k).toLowerCase()} }}`, 'ig'), this.#env[k]);
+    }
+
     // write file
     if(!existsSync('.development')){
       Eleven.info('writing updated README.md');
