@@ -27345,7 +27345,10 @@ module.exports = class README{
           );
           const latest = '```:latest```';
           tags.markdown.push(`### There is no latest tag, what am I supposed to do about updates?\r\nIt is of my opinion that the ${latest} tag is super dangerous. Many times, I’ve introduced **breaking** changes to my images. This would have messed up everything for some people. If you don’t want to change the tag to the latest [semver](https://semver.org/), simply use the short versions of [semver](https://semver.org/). Instead of using ${code}:${this.#json.semver.version}${code} you can use ${semverList}. Since on each new version these tags are updated to the latest version of the software, using them is identical to using ${latest} but at least fixed to a major or minor version.`);
-          tags.markdown.push(`If you still insist on having the bleeding edge release of this app, simply use the ${code}:rolling${code} tag, but be warned! You will get the latest version of the app instantly, regardless of breaking changes or security issues or what so ever. You do this at your own risk!`);
+
+          if(!this.#json.semver?.disable?.rolling){
+            tags.markdown.push(`If you still insist on having the bleeding edge release of this app, simply use the ${code}:rolling${code} tag, but be warned! You will get the latest version of the app instantly, regardless of breaking changes or security issues or what so ever. You do this at your own risk!`);
+          }
         }
       }
 
@@ -27517,8 +27520,12 @@ module.exports = class README{
   }
 
   #multiWrite(readme){
-    const readmeGithub = readme.replace(/\$\{\{ github:(.+) \}\}/ig, '$1');
+    const readmeGithub = readme
+      .replace(/\$\{\{ github:(.+) \}\}/ig, '$1')
+      .replace(/^# SOURCE.+\n\* \S+\n/img, '');
+
     const readmeDocker = readme.replace(/\$\{\{ github:(.+) \}\}/ig, '');
+
     writeFileSync('./README.md', readmeGithub);
     writeFileSync('./README_NONGITHUB.md', readmeDocker);
   }
@@ -27549,12 +27556,11 @@ const etc = {
   
   content:{
     shields:`${[
-      '[<img src="https://img.shields.io/badge/github-source-blue?logo=github&color=040308">](https://github.com/11notes/docker-${{ json_name }})',
       '![size](https://img.shields.io/docker/image-size/${{ json_image }}/${{ json_semver_version }}?color=0eb305)',
       '![version](https://img.shields.io/docker/v/${{ json_image }}/${{ json_semver_version }}?color=eb7a09)',
       '![pulls](https://img.shields.io/docker/pulls/${{ json_image }}?color=2b75d6)',
       '[<img src="https://img.shields.io/github/issues/11notes/docker-${{ json_name }}?color=7842f5">](https://github.com/11notes/docker-${{ json_name }}/issues)',
-      '![swiss_made](https://img.shields.io/badge/Swiss_Made-FFFFFF?labelColor=FF0000&logo=data:image/svg%2bxml;base64,PHN2ZyB2ZXJzaW9uPSIxIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDMyIDMyIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Im0wIDBoMzJ2MzJoLTMyeiIgZmlsbD0iI2YwMCIvPjxwYXRoIGQ9Im0xMyA2aDZ2N2g3djZoLTd2N2gtNnYtN2gtN3YtNmg3eiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==)',
+      '![swiss_made](https://img.shields.io/badge/Swiss_Made-FFFFFF?labelColor=FF0000&logo=data:image/svg%2bxml;base64,PHN2ZyB2ZXJzaW9uPSIxIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDMyIDMyIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxyZWN0IHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgZmlsbD0idHJhbnNwYXJlbnQiLz4KICA8cGF0aCBkPSJtMTMgNmg2djdoN3Y2aC03djdoLTZ2LTdoLTd2LTZoN3oiIGZpbGw9IiNmZmYiLz4KPC9zdmc+)',
     ].join("![5px](https://github.com/11notes/defaults/blob/main/static/img/transparent5x2px.png?raw=true)")}`,
     tips:`\${{ title_tips }}\r\n\${{ github:> [!TIP] }}\r\n${[
       '${{ github:> }}* Use a reverse proxy like Traefik, Nginx, HAproxy to terminate TLS and to protect your endpoints',
