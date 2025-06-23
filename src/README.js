@@ -209,6 +209,12 @@ module.exports = class README{
       this.#json.readme.description,
     ];
 
+    if(this.#json.readme?.introduction){
+      // introduction present, add to readme
+      this.#header.push(etc.title.introduction);
+      this.#header.push(this.#json.readme.introduction);
+    }
+
     this.#footer = [
       etc.content.patches,
       etc.content.sarif,
@@ -266,7 +272,7 @@ module.exports = class README{
             (semver.length === 3) ? `${code}:${semver[0]}${code} or ${code}:${semver[0]}.${semver[1]}${code}` : `${code}:${semver[0]}${code}`
           );
           const latest = '```:latest```';
-          tags.markdown.push(`### There is no latest tag, what am I supposed to do about updates?\r\nIt is of my opinion that the ${latest} tag is super dangerous. Many times, I’ve introduced **breaking** changes to my images. This would have messed up everything for some people. If you don’t want to change the tag to the latest [semver](https://semver.org/), simply use the short versions of [semver](https://semver.org/). Instead of using ${code}:${this.#json.semver.version}${code} you can use ${semverList}. Since on each new version these tags are updated to the latest version of the software, using them is identical to using ${latest} but at least fixed to a major or minor version.`);
+          tags.markdown.push(`### There is no latest tag, what am I supposed to do about updates?\r\nIt is of my opinion that the ${latest} tag is dangerous. Many times, I’ve introduced **breaking** changes to my images. This would have messed up everything for some people. If you don’t want to change the tag to the latest [semver](https://semver.org/), simply use the short versions of [semver](https://semver.org/). Instead of using ${code}:${this.#json.semver.version}${code} you can use ${semverList}. Since on each new version these tags are updated to the latest version of the software, using them is identical to using ${latest} but at least fixed to a major or minor version.`);
 
           if(!this.#json.semver?.disable?.rolling){
             tags.markdown.push(`If you still insist on having the bleeding edge release of this app, simply use the ${code}:rolling${code} tag, but be warned! You will get the latest version of the app instantly, regardless of breaking changes or security issues or what so ever. You do this at your own risk!`);
@@ -474,6 +480,7 @@ const etc = {
     sarif:'# SECURITY VULNERABILITIES REPORT ⚡',
     caution:'# CAUTION ⚠️',
     registries:'# REGISTRIES ☁️',
+    introduction:'# INTRODUCTION 📢',
   },
   
   content:{
