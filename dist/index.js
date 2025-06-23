@@ -27375,6 +27375,18 @@ module.exports = class README{
       if(new RegExp(this.#json.image, 'i').test(yaml.services[service].image)){
         Eleven.info(`#compose :: found ${yaml.services[service].image} in service ${service}, updating with latest version`)
         compose = compose.replace(new RegExp(yaml.services[service].image, 'ig'), `${this.#json.image}:${this.#json.semver.version}`);
+      }else if(match = yaml.services[service].image.match(/11notes\/(\S+):/i)){        
+        (async()=>{
+          const url = `https://github.com/11notes/docker-${match[1]}/blob/master/.json`;
+          try{
+            const image = await fetch(url);
+            const dot = await master.json();
+            compose = compose.replace(new RegExp(yaml.services[service].image, 'ig'), `11notes/${match[1]}:${dot.semver.version}`);
+            Eleven.info(`#compose :: found ${yaml.services[service].image} in service ${service}, updating to ${dot.semver.version} of remote repository`)
+          }catch(e){
+            Eleven.warning(`could not find ${url}`);
+          }
+        })();
       }
     }
     writeFileSync(file, compose);
@@ -27473,6 +27485,7 @@ module.exports = class README{
       "11notes/distroless":["https://github.com/11notes/docker-distroless/blob/master/arch.dockerfile", "contains users, timezones and Root CA certificates"],
       "11notes/distroless:dnslookup":["https://github.com/11notes/docker-distroless/blob/master/dnslookup.dockerfile", "app to execute DNS queries"],
       "11notes/distroless:curl":["https://github.com/11notes/docker-distroless/blob/master/curl.dockerfile", "app to execute HTTP or UNIX requests"],
+      "11notes/nginx:stable":["https://github.com/11notes/docker-nginx/blob/master/arch.dockerfile", "lightweight nginx"],
     }
     etc.content.parent = `${etc.title.parent}\r\n\${{ github:> [!IMPORTANT] }}\r\n\${{ github:> }}This image is not based on another image but uses [scratch](https://hub.docker.com/_/scratch) as the starting layer.`;
     if(this.#json?.readme?.distroless?.layers){
