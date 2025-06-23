@@ -301,7 +301,7 @@ module.exports = class README{
         const m = yaml.services[service].image.match(/11notes\/(\S+):/i);
         if(null !== m){
           (async()=>{
-            const url = `https://github.com/11notes/docker-${m[1]}/blob/master/.json`;
+            const url = `https://raw.githubusercontent.com/11notes/docker-${m[1]}/refs/heads/master/.json`;
             try{
               const image = await fetch(url);
               const dot = await master.json();
