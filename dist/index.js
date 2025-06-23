@@ -27372,8 +27372,8 @@ module.exports = class README{
     let compose = readFileSync(file).toString();
     const yaml = YAML.parse(compose);
     for(const service in yaml.services){
-      if(service == this.#json.name){
-        compose = compose.replace(yaml.services[service].image, `${this.#json.image}:${this.#json.semver.version}`);
+      if(new RegExp(this.#json.image, 'i').test(yaml.services[service].image)){
+        compose = compose.replace(new RegExp(yaml.services[service].image, 'ig'), `${this.#json.image}:${this.#json.semver.version}`);
       }
     }
     writeFileSync(file, compose);
