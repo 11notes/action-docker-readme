@@ -304,7 +304,7 @@ module.exports = class README{
             const url = `https://raw.githubusercontent.com/11notes/docker-${m[1]}/refs/heads/master/.json`;
             try{
               const image = await fetch(url);
-              const dot = await master.json();
+              const dot = await image.json();
               compose = compose.replace(new RegExp(yaml.services[service].image, 'ig'), `11notes/${m[1]}:${dot.semver.version}`);
               Eleven.info(`#compose :: found ${yaml.services[service].image} in service ${service}, updating to ${dot.semver.version} of remote repository`)
             }catch(e){
