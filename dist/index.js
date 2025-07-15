@@ -27113,10 +27113,14 @@ module.exports = class README{
         Eleven.environment('development');
       }
 
+      /*
       const inputs = {
         sarif_file:{value:'', debug:'report.sarif'},
         build_output_metadata:{value:'{}', debug:null},
       };
+      */
+
+      const inputs = {};
 
       for(const input in inputs){
         if(core.getInput(input) || Eleven.debug){
