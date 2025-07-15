@@ -61,7 +61,7 @@ module.exports = class README{
         }
       }
 
-      await Grype.init();
+      //await Grype.init();
       this.#loadImageFiles();
       this.#setupEnvironment();
       this.#create();
@@ -120,11 +120,14 @@ module.exports = class README{
 
   #setupEnvironment(){
 
+    /*
     if(this.#json?.readme?.grype?.severity > 0){
       Grype.cutoff = this.#json.readme.grype.severity;
       Eleven.debug(`set grype markdown cutoff to ${Grype.cutoff}`);
     }
+    */
     
+    /*
     if(this.#inputs.sarif_file && this.#inputs.sarif_file.length > 0){
       Eleven.debug(`create markdownCVE for sarif_file with ${this.#inputs.sarif_file.length} CVEs`);
       const report = new markdownCVE({
@@ -156,6 +159,7 @@ module.exports = class README{
         etc.content.patches = report.create();
       }
     }
+    */
 
     this.#tags();
 
@@ -175,6 +179,7 @@ module.exports = class README{
       case /11notes\/alpine\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/r/11notes/alpine'; break;
       case /11notes\/kms\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/r/11notes/kms'; break;
       case /ubuntu\:.+/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/_/ubuntu'; break;
+      case /paperlessngx\/paperless-ngx.*/i.test(this.#json?.readme?.parent?.image): this.#env['json_readme_parent_url'] = 'https://hub.docker.com/r/paperlessngx/paperless-ngx'; break;
     }
 
     // check for built
@@ -408,9 +413,9 @@ module.exports = class README{
   #distroLess(){
     const distrolessLayers = {
       "11notes/distroless":["https://github.com/11notes/docker-distroless/blob/master/arch.dockerfile", "contains users, timezones and Root CA certificates"],
-      "11notes/distroless:dnslookup":["https://github.com/11notes/docker-distroless/blob/master/dnslookup.dockerfile", "app to execute DNS queries"],
-      "11notes/distroless:curl":["https://github.com/11notes/docker-distroless/blob/master/curl.dockerfile", "app to execute HTTP or UNIX requests"],
-      "11notes/nginx:stable":["https://github.com/11notes/docker-nginx/blob/master/arch.dockerfile", "lightweight nginx"],
+      "11notes/distroless:dnslookup":["https://github.com/11notes/docker-distroless/blob/master/dnslookup.dockerfile", "app to execute DNS lookups"],
+      "11notes/distroless:curl":["https://github.com/11notes/docker-distroless/blob/master/curl.dockerfile", "app to execute HTTP requests"],
+      "11notes/distroless:node-stable":["https://github.com/11notes/docker-distroless/blob/master/node.dockerfile", "node (stable version)"],
     }
     etc.content.parent = `${etc.title.parent}\r\n\${{ github:> [!IMPORTANT] }}\r\n\${{ github:> }}This image is not based on another image but uses [scratch](https://hub.docker.com/_/scratch) as the starting layer.`;
     if(this.#json?.readme?.distroless?.layers){
@@ -441,7 +446,7 @@ module.exports = class README{
       if(existsSync('./comparison.size1.log')){
         markdownTable[1][2] = readFileSync('./comparison.size1.log').toString().replace(/[\r\n\s]+/ig, '');
       }else{
-        markdownTable[1][2] = "no image found (provider too slow ...)"
+        markdownTable[1][2] = "no image found"
       }
     }
     if(existsSync('./comparison.id.log')){
