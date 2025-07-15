@@ -27380,12 +27380,13 @@ module.exports = class README{
   #compose(file){
     let compose = readFileSync(file).toString();
     const yaml = YAML.parse(compose);
+    Eleven.info(`#compose :: yaml`, yaml);
+    Eleven.info(`#compose :: checking image: ${yaml.services[service]?.image}`);    
     for(const service in yaml.services){
       if(new RegExp(this.#json.image, 'i').test(yaml.services[service]?.image)){
         Eleven.info(`#compose :: found ${yaml.services[service].image} in service ${service}, updating with latest version`)
         compose = compose.replace(new RegExp(yaml.services[service].image, 'ig'), `${this.#json.image}:${this.#json.semver.version}`);
-      }else{   
-        Eleven.info(`#compose :: checking image: ${yaml.services[service]?.image}`);     
+      }else if(yaml.services[service]?.image !== 'undefined'){    
         const m = yaml.services[service]?.image.match(/11notes\/(\S+):/i);
         if(null !== m){
           (async()=>{
