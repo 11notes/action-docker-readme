@@ -27384,7 +27384,8 @@ module.exports = class README{
       if(new RegExp(this.#json.image, 'i').test(yaml.services[service]?.image)){
         Eleven.info(`#compose :: found ${yaml.services[service].image} in service ${service}, updating with latest version`)
         compose = compose.replace(new RegExp(yaml.services[service].image, 'ig'), `${this.#json.image}:${this.#json.semver.version}`);
-      }else{        
+      }else{   
+        Eleven.info(`#compose :: checking image: ${yaml.services[service]?.image}`);     
         const m = yaml.services[service]?.image.match(/11notes\/(\S+):/i);
         if(null !== m){
           (async()=>{
