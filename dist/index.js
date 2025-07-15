@@ -27381,11 +27381,11 @@ module.exports = class README{
     let compose = readFileSync(file).toString();
     const yaml = YAML.parse(compose);
     for(const service in yaml.services){
-      if(new RegExp(this.#json.image, 'i').test(yaml.services[service].image)){
+      if(new RegExp(this.#json.image, 'i').test(yaml.services[service]?.image)){
         Eleven.info(`#compose :: found ${yaml.services[service].image} in service ${service}, updating with latest version`)
         compose = compose.replace(new RegExp(yaml.services[service].image, 'ig'), `${this.#json.image}:${this.#json.semver.version}`);
       }else{        
-        const m = yaml.services[service].image.match(/11notes\/(\S+):/i);
+        const m = yaml.services[service]?.image.match(/11notes\/(\S+):/i);
         if(null !== m){
           (async()=>{
             const url = `https://raw.githubusercontent.com/11notes/docker-${m[1]}/refs/heads/master/.json`;
