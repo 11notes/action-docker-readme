@@ -313,7 +313,7 @@ module.exports = class README{
         }
       }
 
-      if(new RegExp(this.#json.image, 'i').test(yaml.services[service]?.image)){
+      if(new RegExp(`${this.#json.image}:`, 'i').test(yaml.services[service]?.image)){
         Eleven.info(`#compose :: found ${yaml.services[service].image} in service ${service}, updating with latest version`)
         compose = compose.replace(new RegExp(yaml.services[service].image, 'ig'), `${this.#json.image}:${this.#json.semver.version}`);
       }else if(yaml.services[service]?.image !== 'undefined'){    
@@ -324,8 +324,15 @@ module.exports = class README{
             try{
               const image = await fetch(url);
               const dot = await image.json();
-              compose = compose.replace(new RegExp(yaml.services[service].image, 'ig'), `11notes/${m[1]}:${dot.semver.version}`);
-              Eleven.info(`#compose :: found ${yaml.services[service].image} in service ${service}, updating to ${dot.semver.version} of remote repository`)
+              if(dot?.semver?.version){
+                compose = compose.replace(new RegExp(yaml.services[service].image, 'ig'), `11notes/${m[1]}:${dot.semver.version}`);
+                Eleven.info(`#compose :: found ${yaml.services[service].image} in service ${service}, updating to ${dot.semver.version} of remote repository`);
+              }else if(this.#json?.semver?.version){
+                compose = compose.replace(new RegExp(yaml.services[service].image, 'ig'), `11notes/${m[1]}:${this.#json.semver.version}`);
+                Eleven.info(`#compose :: found ${yaml.services[service].image} in service ${service}, updating to ${this.#json.semver.version} of this repository because semver is missing in parent`);
+              }else{
+                Eleven.warning(`#compose :: found ${yaml.services[service].image} in service ${service}, can't update image because no semver was found in local or remote repository!`);
+              }
             }catch(e){
               Eleven.warning(`${e}`);
             }
