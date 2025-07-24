@@ -27392,8 +27392,12 @@ module.exports = class README{
       }
 
       if(new RegExp(`${this.#json.image}:`, 'i').test(yaml.services[service]?.image)){
-        Eleven.info(`#compose :: found ${yaml.services[service].image} in service ${service}, updating with latest version`)
-        compose = compose.replace(new RegExp(yaml.services[service].image, 'ig'), `${this.#json.image}:${this.#json.semver.version}`);
+        if(new RegExp(`${this.#json.image}:\\d+`, 'i').test(yaml.services[service]?.image)){
+          Eleven.info(`#compose :: found ${yaml.services[service].image} in service ${service}, updating with latest version`)
+          compose = compose.replace(new RegExp(yaml.services[service].image, 'ig'), `${this.#json.image}:${this.#json.semver.version}`);
+        }else{
+          Eleven.warning(`#compose :: found ${yaml.services[service].image} in service ${service} with non-semver tag, ignoring`)
+        }
       }else if(yaml.services[service]?.image !== 'undefined'){    
         const m = yaml.services[service]?.image.match(/11notes\/(\S+):/i);
         if(null !== m){
