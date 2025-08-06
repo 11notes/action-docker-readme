@@ -440,7 +440,8 @@ module.exports = class README{
       "11notes/distroless":["https://github.com/11notes/docker-distroless/blob/master/arch.dockerfile", "contains users, timezones and Root CA certificates"],
       "11notes/distroless:dnslookup":["https://github.com/11notes/docker-distroless/blob/master/dnslookup.dockerfile", "app to execute DNS lookups"],
       "11notes/distroless:curl":["https://github.com/11notes/docker-distroless/blob/master/curl.dockerfile", "app to execute HTTP requests"],
-      "11notes/distroless:node-stable":["https://github.com/11notes/docker-distroless/blob/master/node.dockerfile", "node (stable version)"],
+      "11notes/distroless:localhealth":["https://github.com/11notes/docker-distroless/blob/master/localhealth.dockerfile", "app to execute HTTP requests only on 127.0.0.1"],
+      "11notes/distroless:node":["https://github.com/11notes/docker-distroless/blob/master/node.dockerfile", "node (stable version)"],
     }
     etc.content.parent = `${etc.title.parent}\r\n\${{ github:> [!IMPORTANT] }}\r\n\${{ github:> }}This image is not based on another image but uses [scratch](https://hub.docker.com/_/scratch) as the starting layer.`;
     if(this.#json?.readme?.distroless?.layers){
