@@ -27574,7 +27574,7 @@ module.exports = class README{
     }
     comparison.images.push(process.env?.DOCKER_IMAGE_NAME_AND_VERSION);
 
-    if(his.#json.readme.comparison?.image){
+    if(this.#json.readme.comparison?.image){
       comparison.images.push(this.#json.readme.comparison.image);
     }
 
