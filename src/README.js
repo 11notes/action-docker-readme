@@ -510,7 +510,9 @@ module.exports = class README{
       await exec('docker', ['image', 'pull', image]);
       const arch = [];
       try{
-        const sizeMB = JSON.parse(await exec('docker', ['image', 'ls', '--filter', `reference=${image}`, '--format', 'json']))?.Size;
+        const sizeRaw = JSON.parse(await exec('docker', ['image', 'ls', '--filter', `reference=${image}`, '--format', 'json']))?.Size;
+        const size = parseInt(sizeRaw.replace(/[A-Za-z]+/i, ""));
+        const sizeSI = sizeRaw.match(/[A-Za-z]+/i)[0];
         const manifests = JSON.parse(await exec('docker', ['manifest', 'inspect', image]))?.manifests;
         for(const manifest of manifests){
           if(manifest?.platform?.architecture != 'unknown'){
@@ -519,9 +521,9 @@ module.exports = class README{
         }
         comparison.push({
           name:image,
-          size:sizeMB,
+          size:`${size}${sizeSI}`,
           initAs:await exec('docker', ['run', '--entrypoint', '/bin/sh', '--rm', image, '-c', 'id']),
-          sortBy:parseFloat(`${sizeMB}`.replace(/mb/i, '')),
+          sortBy:size,
         });
       }catch(e){
         core.warning(`exec [docker image ls] exception: ${e}`);
