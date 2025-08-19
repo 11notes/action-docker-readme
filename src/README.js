@@ -3,9 +3,41 @@ const Grype = require('./Grype.js');
 const Inputs = require('./Inputs.js');
 const markdownCVE = require('./markdownCVE.js');
 const YAML = require('yaml');
+const { inspect } = require('node:util');
 
 const core = require('@actions/core');
 const { readdirSync, readFileSync, writeFileSync, existsSync } = require('node:fs');
+
+const exec = async(bin, arg=[], stripCRLF=true) => {
+  let stdout = '';
+  let stderr = '';
+
+  const options = {
+    listeners:{
+      stdout:(data) => {
+        stdout += data.toString();
+      },
+      stderr:(data) => {
+        stderr += data.toString();
+      }
+    }
+  };
+
+  try{
+    await _exec.exec(bin, arg, options);
+  }catch(e){
+    core.warning(`exec [${bin}] exception: ${e}`);
+    return(false);
+  }
+  if(stderr.length > 0){
+    core.warning(`exec [${bin}] exited with error: ${stderr}`);
+    return(false);
+  }
+  if(stripCRLF){
+    stdout = stdout.replace(/[\r\n]*/g, '');
+  }
+  return(stdout);
+};
 
 module.exports = class README{
   #inputs = {};
@@ -459,40 +491,28 @@ module.exports = class README{
   }
 
   async #comparison(){
-    const buildIds = [...(process.env?.DOCKER_IMAGE_ARGUMENTS.replace(/[\n\r]+/ig, '')).matchAll(/APP_UID=(\d+).*APP_GID=(\d+)/img)];
-    const markdownTable = [
-      ['**image**', process.env?.WORKFLOW_CREATE_COMPARISON_IMAGE, process.env?.WORKFLOW_CREATE_COMPARISON_FOREIGN_IMAGE],
-      ['**image size on disk**', '?', '?'],
-      ['**process UID/GID**', `${buildIds[0][1]}/${buildIds[0][2]}`, '?/?'],
-      ['**distroless?**', ((this.#json?.readme?.distroless) ? '✅' : '❌'), '❌'],
-      ['**rootless?**', '✅', '❌']
-    ];
-    if(existsSync('./comparison.size0.log')){
-      markdownTable[1][1] = readFileSync('./comparison.size0.log').toString().replace(/[\r\n\s]+/ig, '');
-      if(existsSync('./comparison.size1.log')){
-        markdownTable[1][2] = readFileSync('./comparison.size1.log').toString().replace(/[\r\n\s]+/ig, '');
-      }else{
-        markdownTable[1][2] = "no image found"
-      }
+    const comparison = {
+      images:[],
+      sizes:[],
     }
-    if(existsSync('./comparison.id.log')){
-      const idLog = readFileSync('./comparison.id.log').toString();
-      const ids = [...idLog.matchAll(/uid=(\d+).*gid=(\d+)/ig)];
-      Eleven.info(ids);
-      if(Array.isArray(ids) && ids.length > 0){
-        markdownTable[2][2] = `${ids[0][1]}/${ids[0][2]}`; 
-        if(parseInt(ids[0][1]) > 0 && parseInt(ids[0][2]) > 0){
-          markdownTable[4][2] = '✅';
-        }
-      }else if(/executable file not found/i.test(idLog)){
-        markdownTable[3][2] = '✅';
-      }
+    comparison.images.push(process.env?.DOCKER_IMAGE_NAME_AND_VERSION);
+
+    if(his.#json.readme.comparison?.image){
+      comparison.images.push(this.#json.readme.comparison.image);
     }
-    let markdown = `| ${markdownTable[0][0]} | ${markdownTable[0][1]} | ${markdownTable[0][2]} |\r\n| ---: | :---: | :---: |\r\n`;
-    for(let i=1; i<markdownTable.length; i++){
-      markdown += `| ${markdownTable[i][0]} | ${markdownTable[i][1]} | ${markdownTable[i][2]} |\r\n`;
+
+    for(const image of comparison.images){
+      await exec('docker', ['image', 'pull', image]);
+      try{
+        comparison.sizes.push(JSON.parse(await exec('docker', ['image', 'ls', '--filter', `"reference=${image}"`, '--format', 'json']))?.Size);
+      }catch(e){
+        core.warning(`exec [docker image ls] exception: ${e}`);
+      }      
     }
-    etc.content.comparison += markdown;
+
+    core.info(inspect(comparison, {showHidden:false, depth:null, colors:true}));
+
+    etc.content.comparison = "";
   }
 
   #multiWrite(readme){

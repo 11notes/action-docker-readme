@@ -1,4 +1,3 @@
-const os = require('os');
 const { inspect } = require('node:util');
 const core = require('@actions/core');
 

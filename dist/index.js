@@ -26718,7 +26718,6 @@ module.exports = {
 /***/ 3393:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const os = __nccwpck_require__(857);
 const { inspect } = __nccwpck_require__(7975);
 const core = __nccwpck_require__(5859);
 
@@ -27081,9 +27080,41 @@ const Grype = __nccwpck_require__(5861);
 const Inputs = __nccwpck_require__(5465);
 const markdownCVE = __nccwpck_require__(7141);
 const YAML = __nccwpck_require__(3488);
+const { inspect } = __nccwpck_require__(7975);
 
 const core = __nccwpck_require__(5859);
 const { readdirSync, readFileSync, writeFileSync, existsSync } = __nccwpck_require__(3024);
+
+const exec = async(bin, arg=[], stripCRLF=true) => {
+  let stdout = '';
+  let stderr = '';
+
+  const options = {
+    listeners:{
+      stdout:(data) => {
+        stdout += data.toString();
+      },
+      stderr:(data) => {
+        stderr += data.toString();
+      }
+    }
+  };
+
+  try{
+    await _exec.exec(bin, arg, options);
+  }catch(e){
+    core.warning(`exec [${bin}] exception: ${e}`);
+    return(false);
+  }
+  if(stderr.length > 0){
+    core.warning(`exec [${bin}] exited with error: ${stderr}`);
+    return(false);
+  }
+  if(stripCRLF){
+    stdout = stdout.replace(/[\r\n]*/g, '');
+  }
+  return(stdout);
+};
 
 module.exports = class README{
   #inputs = {};
@@ -27519,7 +27550,7 @@ module.exports = class README{
       "11notes/distroless:dnslookup":["https://github.com/11notes/docker-distroless/blob/master/dnslookup.dockerfile", "app to execute DNS lookups"],
       "11notes/distroless:curl":["https://github.com/11notes/docker-distroless/blob/master/curl.dockerfile", "app to execute HTTP requests"],
       "11notes/distroless:localhealth":["https://github.com/11notes/docker-distroless/blob/master/localhealth.dockerfile", "app to execute HTTP requests only on 127.0.0.1"],
-      "11notes/distroless:node-stable":["https://github.com/11notes/docker-distroless/blob/master/node.dockerfile", "node (stable version)"],
+      "11notes/distroless:node":["https://github.com/11notes/docker-distroless/blob/master/node.dockerfile", "node (stable version)"],
     }
     etc.content.parent = `${etc.title.parent}\r\n\${{ github:> [!IMPORTANT] }}\r\n\${{ github:> }}This image is not based on another image but uses [scratch](https://hub.docker.com/_/scratch) as the starting layer.`;
     if(this.#json?.readme?.distroless?.layers){
@@ -27537,40 +27568,28 @@ module.exports = class README{
   }
 
   async #comparison(){
-    const buildIds = [...(process.env?.DOCKER_IMAGE_ARGUMENTS.replace(/[\n\r]+/ig, '')).matchAll(/APP_UID=(\d+).*APP_GID=(\d+)/img)];
-    const markdownTable = [
-      ['**image**', process.env?.WORKFLOW_CREATE_COMPARISON_IMAGE, process.env?.WORKFLOW_CREATE_COMPARISON_FOREIGN_IMAGE],
-      ['**image size on disk**', '?', '?'],
-      ['**process UID/GID**', `${buildIds[0][1]}/${buildIds[0][2]}`, '?/?'],
-      ['**distroless?**', ((this.#json?.readme?.distroless) ? '✅' : '❌'), '❌'],
-      ['**rootless?**', '✅', '❌']
-    ];
-    if(existsSync('./comparison.size0.log')){
-      markdownTable[1][1] = readFileSync('./comparison.size0.log').toString().replace(/[\r\n\s]+/ig, '');
-      if(existsSync('./comparison.size1.log')){
-        markdownTable[1][2] = readFileSync('./comparison.size1.log').toString().replace(/[\r\n\s]+/ig, '');
-      }else{
-        markdownTable[1][2] = "no image found"
-      }
+    const comparison = {
+      images:[],
+      sizes:[],
     }
-    if(existsSync('./comparison.id.log')){
-      const idLog = readFileSync('./comparison.id.log').toString();
-      const ids = [...idLog.matchAll(/uid=(\d+).*gid=(\d+)/ig)];
-      Eleven.info(ids);
-      if(Array.isArray(ids) && ids.length > 0){
-        markdownTable[2][2] = `${ids[0][1]}/${ids[0][2]}`; 
-        if(parseInt(ids[0][1]) > 0 && parseInt(ids[0][2]) > 0){
-          markdownTable[4][2] = '✅';
-        }
-      }else if(/executable file not found/i.test(idLog)){
-        markdownTable[3][2] = '✅';
-      }
+    comparison.images.push(process.env?.DOCKER_IMAGE_NAME_AND_VERSION);
+
+    if(his.#json.readme.comparison?.image){
+      comparison.images.push(this.#json.readme.comparison.image);
     }
-    let markdown = `| ${markdownTable[0][0]} | ${markdownTable[0][1]} | ${markdownTable[0][2]} |\r\n| ---: | :---: | :---: |\r\n`;
-    for(let i=1; i<markdownTable.length; i++){
-      markdown += `| ${markdownTable[i][0]} | ${markdownTable[i][1]} | ${markdownTable[i][2]} |\r\n`;
+
+    for(const image of comparison.images){
+      await exec('docker', ['image', 'pull', image]);
+      try{
+        comparison.sizes.push(JSON.parse(await exec('docker', ['image', 'ls', '--filter', `"reference=${image}"`, '--format', 'json']))?.Size);
+      }catch(e){
+        core.warning(`exec [docker image ls] exception: ${e}`);
+      }      
     }
-    etc.content.comparison += markdown;
+
+    core.info(inspect(comparison, {showHidden:false, depth:null, colors:true}));
+
+    etc.content.comparison = "";
   }
 
   #multiWrite(readme){
