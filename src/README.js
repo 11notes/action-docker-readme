@@ -516,7 +516,11 @@ module.exports = class README{
         const manifests = JSON.parse(await exec('docker', ['manifest', 'inspect', image]))?.manifests;
         for(const manifest of manifests){
           if(manifest?.platform?.architecture != 'unknown'){
-            arch.push(manifest.platform.architecture);
+            if(manifest?.platform?.variant){
+              arch.push(`${manifest.platform.architecture}${manifest.platform.variant}`);
+            }else{
+              arch.push(manifest.platform.architecture);
+            }
           }
         }
         comparison.push({
