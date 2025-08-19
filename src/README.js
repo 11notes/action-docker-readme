@@ -492,29 +492,28 @@ module.exports = class README{
   }
 
   async #comparison(){
-    const comparison = {
-      images:[],
-      sizes:[],
-      init:[],
-    }
+    const images = [];
+    const comparison = {};
 
-    comparison.images.push(process.env?.DOCKER_IMAGE_NAME_AND_VERSION);
+    images.push(process.env?.DOCKER_IMAGE_NAME_AND_VERSION);
 
     if(this.#json.readme.comparison?.image){
-      comparison.images.push(this.#json.readme.comparison.image);
+      images.push(this.#json.readme.comparison.image);
     }
     if(this.#json.readme.comparison?.images){
-      comparison.images = comparison.images.concat(this.#json.readme.comparison.images);
+      images = images.concat(this.#json.readme.images);
     }
 
-    for(const image of comparison.images){
+    for(const image of images){
       await exec('docker', ['image', 'pull', image]);
       try{
-        comparison.sizes.push(JSON.parse(await exec('docker', ['image', 'ls', '--filter', `reference=${image}`, '--format', 'json']))?.Size);
-        comparison.init = await exec('docker', ['run', '--entrypoint', '/bin/sh', '--rm', '-c', 'id', image]);
+        comparison[image] = {
+          size:JSON.parse(await exec('docker', ['image', 'ls', '--filter', `reference=${image}`, '--format', 'json']))?.Size,
+          initAs:await exec('docker', ['run', '--entrypoint', '/bin/sh', '--rm', image, '-c', 'id'])
+        };
       }catch(e){
         core.warning(`exec [docker image ls] exception: ${e}`);
-      }      
+      }
     }
 
     core.info(inspect(comparison, {showHidden:false, depth:null, colors:true}));
