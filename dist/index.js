@@ -27083,6 +27083,7 @@ const YAML = __nccwpck_require__(3488);
 const { inspect } = __nccwpck_require__(7975);
 
 const core = __nccwpck_require__(5859);
+const _exec = __nccwpck_require__(4803);
 const { readdirSync, readFileSync, writeFileSync, existsSync } = __nccwpck_require__(3024);
 
 const exec = async(bin, arg=[], stripCRLF=true) => {

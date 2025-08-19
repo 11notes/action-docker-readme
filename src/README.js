@@ -6,6 +6,7 @@ const YAML = require('yaml');
 const { inspect } = require('node:util');
 
 const core = require('@actions/core');
+const _exec = require('@actions/exec');
 const { readdirSync, readFileSync, writeFileSync, existsSync } = require('node:fs');
 
 const exec = async(bin, arg=[], stripCRLF=true) => {
