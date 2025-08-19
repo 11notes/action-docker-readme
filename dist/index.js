@@ -27621,7 +27621,7 @@ module.exports = class README{
     }
 
     etc.content.comparison += markdown.join("\r\n");
-    core.info(inspect({markdown:markdown, comparison:comparison}, {showHidden:false, depth:null, colors:true}));
+    core.info(inspect({markdown:markdown, comparison:comparison, etc:etc.content.comparison}, {showHidden:false, depth:null, colors:true}));
   }
 
   #multiWrite(readme){
