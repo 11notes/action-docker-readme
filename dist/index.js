@@ -27571,8 +27571,8 @@ module.exports = class README{
   async #comparison(){
     const images = [];
     const comparison = {};
-    let markdown = `| **image** | **size on disk** | **starts default as ([rootless](https://github.com/11notes/RTFM/blob/main/linux/container/image/rootless.md))** | **[distroless](https://github.com/11notes/RTFM/blob/main/linux/container/image/distroless.md)** |`;
-    markdown += `| ---: | :--- | :---: | :---: |`;
+    let markdown = `| **image** | **size on disk** | **starts default as ([rootless](https://github.com/11notes/RTFM/blob/main/linux/container/image/rootless.md))** | **[distroless](https://github.com/11notes/RTFM/blob/main/linux/container/image/distroless.md)** |\r\n`;
+    markdown += `| ---: | ---: | :---: | :---: |\r\n`;
 
     images.push(process.env?.DOCKER_IMAGE_NAME_AND_VERSION);
 
@@ -27617,7 +27617,8 @@ module.exports = class README{
         distroless = '✅';
       }
 
-      markdown += `| ${image} | ${comparison[image].size} | ${initAs} | ${distroless} |`;
+      markdown += `| ${image} | ${comparison[image].size} | ${initAs} | ${distroless} |\r\n`;
+      core.info(inspect({markdown:markdown, comparison:comparison}, {showHidden:false, depth:null, colors:true}));
     }
 
     etc.content.comparison += markdown;
