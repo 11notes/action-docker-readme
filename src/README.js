@@ -492,18 +492,18 @@ module.exports = class README{
   }
 
   async #comparison(){
-    let images = [];
+    const images = [process.env.DOCKER_IMAGE_NAME_AND_VERSION];
     const comparison = {};
     const markdown = [`| **image** | **size on disk** | **starts default as ([rootless](https://github.com/11notes/RTFM/blob/main/linux/container/image/rootless.md))** | **[distroless](https://github.com/11notes/RTFM/blob/main/linux/container/image/distroless.md)** |`];
     markdown.push('| ---: | ---: | :---: | :---: |');
-
-    images.push(process.env?.DOCKER_IMAGE_NAME_AND_VERSION);
 
     if(this.#json.readme.comparison?.image){
       images.push(this.#json.readme.comparison.image);
     }
     if(this.#json.readme.comparison?.images){
-      images = images.concat(this.#json.readme.comparison.images);
+      for(const foreign of this.#json.readme.comparison.images){
+        images.push(foreign);
+      }
     }
 
     for(const image of images){
