@@ -100,7 +100,7 @@ module.exports = class README{
 
       //await Grype.init();
       this.#loadImageFiles();
-      this.#setupEnvironment();
+      await this.#setupEnvironment();
       this.#create();
     }catch(e){
       Eleven.warning('exception during init phase', e);
@@ -155,7 +155,7 @@ module.exports = class README{
     }
   }
 
-  #setupEnvironment(){
+  async #setupEnvironment(){
 
     /*
     if(this.#json?.readme?.grype?.severity > 0){
@@ -238,7 +238,7 @@ module.exports = class README{
     }
 
     if(this.#json?.readme?.comparison){
-      this.#comparison();
+      await this.#comparison();
     }
 
     // finalize env
@@ -544,7 +544,7 @@ module.exports = class README{
     }
 
     etc.content.comparison += markdown.join("\r\n");
-    core.info(inspect({markdown:markdown, comparison:comparison, etc:etc.content.comparison}, {showHidden:false, depth:null, colors:true}));
+    core.info(inspect({markdown:markdown, comparison:comparison}, {showHidden:false, depth:null, colors:true}));
   }
 
   #multiWrite(readme){
