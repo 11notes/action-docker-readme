@@ -27601,6 +27601,7 @@ module.exports = class README{
             size:`${size}${sizeSI}`,
             initAs:await exec('docker', ['run', '--entrypoint', '/bin/sh', '--rm', image, '-c', 'id']),
             sortBy:size,
+            arch:arch,
           });
         }catch(e){
           core.warning(`exec [docker image ls] exception: ${e}`);
@@ -27639,7 +27640,7 @@ module.exports = class README{
           .replace(':rolling', '')
           .replace(':latest', '')
   
-        markdown.push(`| ${name} | ${image.size} | ${initAs} | ${distroless} | ${arch.join(', ')} |`);
+        markdown.push(`| ${name} | ${image.size} | ${initAs} | ${distroless} | ${image.arch.join(', ')} |`);
       }
   
       etc.content.comparison += markdown.join("\r\n");
