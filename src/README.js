@@ -494,8 +494,8 @@ module.exports = class README{
   async #comparison(){
     const images = [process.env.DOCKER_IMAGE_NAME_AND_VERSION];
     const comparison = [];
-    const markdown = [`| **image** | **size on disk** | **starts default as ([rootless](https://github.com/11notes/RTFM/blob/main/linux/container/image/rootless.md))** | **[distroless](https://github.com/11notes/RTFM/blob/main/linux/container/image/distroless.md)** |`];
-    markdown.push('| ---: | ---: | :---: | :---: |');
+    const markdown = [`| **image** | **size on disk** | **init default as** | **[distroless](https://github.com/11notes/RTFM/blob/main/linux/container/image/distroless.md)** | supported architectures`];
+    markdown.push('| ---: | ---: | :---: | :---: | :---: |');
 
     if(this.#json.readme.comparison?.image){
       images.push(this.#json.readme.comparison.image);
@@ -508,8 +508,15 @@ module.exports = class README{
 
     for(const image of images){
       await exec('docker', ['image', 'pull', image]);
+      const arch = [];
       try{
         const sizeMB = JSON.parse(await exec('docker', ['image', 'ls', '--filter', `reference=${image}`, '--format', 'json']))?.Size;
+        const manifests = JSON.parse(await exec('docker', ['manifest', 'inspect', image]))?.manifests;
+        for(const manifest of manifests){
+          if(manifest?.platform?.architecture != 'unknown'){
+            arch.push(manifest.platform.architecture);
+          }
+        }
         comparison.push({
           name:image,
           size:sizeMB,
@@ -553,7 +560,7 @@ module.exports = class README{
         .replace(':rolling', '')
         .replace(':latest', '')
 
-      markdown.push(`| ${name} | ${image.size} | ${initAs} | ${distroless} |`);
+      markdown.push(`| ${name} | ${image.size} | ${initAs} | ${distroless} | ${arch.join(', ')} |`);
     }
 
     etc.content.comparison += markdown.join("\r\n");
