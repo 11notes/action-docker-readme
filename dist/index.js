@@ -27580,7 +27580,7 @@ module.exports = class README{
       images.push(this.#json.readme.comparison.image);
     }
     if(this.#json.readme.comparison?.images){
-      images = images.concat(this.#json.readme.images);
+      images = images.concat(this.#json.readme.comparison.images);
     }
 
     for(const image of images){
