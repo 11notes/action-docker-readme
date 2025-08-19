@@ -27571,7 +27571,7 @@ module.exports = class README{
   async #comparison(){
     const images = [];
     const comparison = {};
-    const markdown = `| **image** | **size on disk** | **starts default as ([rootless](https://github.com/11notes/RTFM/blob/main/linux/container/image/rootless.md))** | **[distroless](https://github.com/11notes/RTFM/blob/main/linux/container/image/distroless.md)** |`;
+    let markdown = `| **image** | **size on disk** | **starts default as ([rootless](https://github.com/11notes/RTFM/blob/main/linux/container/image/rootless.md))** | **[distroless](https://github.com/11notes/RTFM/blob/main/linux/container/image/distroless.md)** |`;
     markdown += `| ---: | :--- | :---: | :---: |`;
 
     images.push(process.env?.DOCKER_IMAGE_NAME_AND_VERSION);
