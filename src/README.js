@@ -494,6 +494,8 @@ module.exports = class README{
   async #comparison(){
     const images = [];
     const comparison = {};
+    const markdown = `| **image** | **size on disk** | **starts default as ([rootless](https://github.com/11notes/RTFM/blob/main/linux/container/image/rootless.md))** | **[distroless](https://github.com/11notes/RTFM/blob/main/linux/container/image/distroless.md)** |`;
+    markdown += `| ---: | :--- | :---: | :---: |`;
 
     images.push(process.env?.DOCKER_IMAGE_NAME_AND_VERSION);
 
@@ -516,9 +518,32 @@ module.exports = class README{
       }
     }
 
-    core.info(inspect(comparison, {showHidden:false, depth:null, colors:true}));
+    for(const image in comparison){
+      let initAs = "0:0";
+      let distroless = '❌';
 
-    etc.content.comparison = "";
+      // initAs
+      if(!comparison[image].initAs){
+        const ainitAs = [...(process.env?.DOCKER_IMAGE_ARGUMENTS.replace(/[\n\r]+/ig, '')).matchAll(/APP_UID=(\d+).*APP_GID=(\d+)/img)];
+        if(Array.isArray(ainitAs) && ainitAs.length > 0 && Array.isArray(ainitAs[0])){
+          initAs = `${ainitAs[0][1]}:${ainitAs[0][2]}`;
+        }
+      }else{
+        const ainitAs = [...comparison[image].initAs.matchAll(/uid=(\d+).*gid=(\d+)/img)];
+        if(Array.isArray(ainitAs) && ainitAs.length > 0 && Array.isArray(ainitAs[0])){
+          initAs = `${ainitAs[0][1]}:${ainitAs[0][2]}`;
+        }
+      }
+
+      // distroless
+      if(!comparison[image].initAs){
+        distroless = '✅';
+      }
+
+      markdown += `| ${image} | ${comparison[image].size} | ${initAs} | ${distroless} |`;
+    }
+
+    etc.content.comparison += markdown;
   }
 
   #multiWrite(readme){
