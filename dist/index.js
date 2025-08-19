@@ -27572,17 +27572,23 @@ module.exports = class README{
     const comparison = {
       images:[],
       sizes:[],
+      init:[],
     }
+
     comparison.images.push(process.env?.DOCKER_IMAGE_NAME_AND_VERSION);
 
     if(this.#json.readme.comparison?.image){
       comparison.images.push(this.#json.readme.comparison.image);
     }
+    if(this.#json.readme.comparison?.images){
+      comparison.images = comparison.images.concat(this.#json.readme.comparison.images);
+    }
 
     for(const image of comparison.images){
       await exec('docker', ['image', 'pull', image]);
       try{
-        comparison.sizes.push(JSON.parse(await exec('docker', ['image', 'ls', '--filter', `"reference=${image}"`, '--format', 'json']))?.Size);
+        comparison.sizes.push(JSON.parse(await exec('docker', ['image', 'ls', '--filter', `reference=${image}`, '--format', 'json']))?.Size);
+        comparison.init = await exec('docker', ['run', '--entrypoint', '/bin/sh', '--rm', '-c', 'id', image]);
       }catch(e){
         core.warning(`exec [docker image ls] exception: ${e}`);
       }      
