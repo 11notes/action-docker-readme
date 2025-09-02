@@ -27605,7 +27605,7 @@ module.exports = class README{
             size:`${size}${sizeSI}`,
             initAs:await exec('docker', ['run', '--entrypoint', '/bin/sh', '--rm', image, '-c', 'id']),
             sortBy:size,
-            arch:arch,
+            arch:arch.sort(),
           });
         }catch(e){
           core.warning(`exec [docker image ls] exception: ${e}`);
