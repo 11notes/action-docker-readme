@@ -27590,16 +27590,21 @@ module.exports = class README{
           const sizeRaw = JSON.parse(await exec('docker', ['image', 'ls', '--filter', `reference=${image}`, '--format', 'json']))?.Size;
           const size = parseInt(sizeRaw.replace(/[A-Za-z]+/i, ""));
           const sizeSI = sizeRaw.match(/[A-Za-z]+/i)[0];
-          const manifests = JSON.parse(await exec('docker', ['manifest', 'inspect', image]))?.manifests;
-          for(const manifest of manifests){
-            if(manifest?.platform?.architecture != 'unknown'){
-              if(manifest?.platform?.variant){
-                arch.push(`${manifest.platform.architecture}${manifest.platform.variant}`);
-              }else{
-                arch.push(manifest.platform.architecture);
+          const json = JSON.parse(await exec('docker', ['manifest', 'inspect', image]));
+          if(json?.manifests){
+            for(const manifest of json.manifests){
+              if(manifest?.platform?.architecture != 'unknown'){
+                if(manifest?.platform?.variant){
+                  arch.push(`${manifest.platform.architecture}${manifest.platform.variant}`);
+                }else{
+                  arch.push(manifest.platform.architecture);
+                }
               }
             }
+          }else{
+            arch.push('amd64');
           }
+  
           comparison.push({
             name:image,
             size:`${size}${sizeSI}`,

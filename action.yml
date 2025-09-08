@@ -4,13 +4,6 @@ description: 'This action will create a README.md for all my Docker images'
 branding:
   icon: 'book-open'
   color: 'blue'
-inputs:
-  sarif_file: 
-    description: 'the grype sarif output'
-  build_output_metadata: 
-    description: 'the metadata output of the build stage'
-  development:
-    description: 'sets Eleven.debug to true'
 runs:
   using: 'node20'
   main: 'dist/index.js'
