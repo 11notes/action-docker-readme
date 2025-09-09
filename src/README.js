@@ -591,6 +591,18 @@ module.exports = class README{
   }
 }
 
+const arrStackFilter = function(images){
+  const self = process.env.DOCKER_IMAGE_NAME_AND_VERSION.split(':')[0];
+  const filtered = [];
+  for(const image of images){
+    if(!new RegExp(self, 'i').test(image)){
+      filtered.push(image);
+    }
+  }
+  filtered.sort();
+  return(filtered);
+}
+
 const etc = {
   title:{
     synopsis:'# SYNOPSIS 📖',
@@ -613,8 +625,9 @@ const etc = {
     caution:'# CAUTION ⚠️',
     registries:'# REGISTRIES ☁️',
     introduction:'# INTRODUCTION 📢',
+    arr_stack:'# ARR STACK IMAGES 🏴‍☠️'
   },
-  
+
   content:{
     shields:`${[
       '![size](https://img.shields.io/docker/image-size/${{ json_image }}/${{ json_semver_version }}?color=0eb305)',
@@ -651,6 +664,15 @@ const etc = {
     sarif:'',
     patches:'',
     comparison:"${{ title_comparison }}\r\nBelow you find a comparison between this image and the most used or original one.\r\n\r\n",
+    arr_stack:`\${{ title_arr_stack }}\r\n${arrStackFilter([
+      `This image is part of the so called arr-stack (apps to pirate and manage media content). Here is the list of all it's companion apps for the best pirate experience:`,
+      '- [11notes/sonarr](https://github.com/11notes/docker-sonarr)',
+      '- [11notes/radarr](https://github.com/11notes/docker-radarr)',
+      '- [11notes/prowlarr](https://github.com/11notes/docker-prowlarr)',
+      '- [11notes/plex](https://github.com/11notes/docker-plex)',
+      '- [11notes/sabnzbd](https://github.com/11notes/docker-sabnzbd)',
+      '- [11notes/qbittorrent](https://github.com/11notes/docker-qbittorrent)',
+    ]).join("\r\n")}`,
   },
   text:{
     tags:'These are the main tags for the image. There is also a tag for each commit and its shorthand sha256 value.',

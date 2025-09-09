@@ -27569,92 +27569,92 @@ module.exports = class README{
   }
 
   async #comparison(){
-      const images = [process.env.DOCKER_IMAGE_NAME_AND_VERSION];
-      const comparison = [];
-      const markdown = [`| **image** | **size on disk** | **init default as** | **[distroless](https://github.com/11notes/RTFM/blob/main/linux/container/image/distroless.md)** | supported architectures`];
-      markdown.push('| ---: | ---: | :---: | :---: | :---: |');
-  
-      if(this.#json.readme.comparison?.image){
-        images.push(this.#json.readme.comparison.image);
+    const images = [process.env.DOCKER_IMAGE_NAME_AND_VERSION];
+    const comparison = [];
+    const markdown = [`| **image** | **size on disk** | **init default as** | **[distroless](https://github.com/11notes/RTFM/blob/main/linux/container/image/distroless.md)** | supported architectures`];
+    markdown.push('| ---: | ---: | :---: | :---: | :---: |');
+
+    if(this.#json.readme.comparison?.image){
+      images.push(this.#json.readme.comparison.image);
+    }
+    if(this.#json.readme.comparison?.images){
+      for(const foreign of this.#json.readme.comparison.images){
+        images.push(foreign);
       }
-      if(this.#json.readme.comparison?.images){
-        for(const foreign of this.#json.readme.comparison.images){
-          images.push(foreign);
-        }
-      }
-  
-      for(const image of images){
-        await exec('docker', ['image', 'pull', image]);
-        const arch = [];
-        try{
-          const sizeRaw = JSON.parse(await exec('docker', ['image', 'ls', '--filter', `reference=${image}`, '--format', 'json']))?.Size;
-          const size = parseInt(sizeRaw.replace(/[A-Za-z]+/i, ""));
-          const sizeSI = sizeRaw.match(/[A-Za-z]+/i)[0];
-          const json = JSON.parse(await exec('docker', ['manifest', 'inspect', image]));
-          if(json?.manifests){
-            for(const manifest of json.manifests){
-              if(manifest?.platform?.architecture != 'unknown'){
-                if(manifest?.platform?.variant){
-                  arch.push(`${manifest.platform.architecture}${manifest.platform.variant}`);
-                }else{
-                  arch.push(manifest.platform.architecture);
-                }
+    }
+
+    for(const image of images){
+      await exec('docker', ['image', 'pull', image]);
+      const arch = [];
+      try{
+        const sizeRaw = JSON.parse(await exec('docker', ['image', 'ls', '--filter', `reference=${image}`, '--format', 'json']))?.Size;
+        const size = parseInt(sizeRaw.replace(/[A-Za-z]+/i, ""));
+        const sizeSI = sizeRaw.match(/[A-Za-z]+/i)[0];
+        const json = JSON.parse(await exec('docker', ['manifest', 'inspect', image]));
+        if(json?.manifests){
+          for(const manifest of json.manifests){
+            if(manifest?.platform?.architecture != 'unknown'){
+              if(manifest?.platform?.variant){
+                arch.push(`${manifest.platform.architecture}${manifest.platform.variant}`);
+              }else{
+                arch.push(manifest.platform.architecture);
               }
             }
-          }else{
-            arch.push('amd64');
-          }
-  
-          comparison.push({
-            name:image,
-            size:`${size}${sizeSI}`,
-            initAs:await exec('docker', ['run', '--entrypoint', '/bin/sh', '--rm', image, '-c', 'id']),
-            sortBy:size,
-            arch:arch.sort(),
-          });
-        }catch(e){
-          core.warning(`exec [docker image ls] exception: ${e}`);
-        }
-      }
-  
-      comparison.sort((a, b) => a.sortBy - b.sortBy);
-  
-      for(const image of comparison){
-        let initAs = "0:0";
-        let distroless = '❌';
-  
-        // initAs
-        if(!image.initAs){
-          const ainitAs = [...(process.env?.DOCKER_IMAGE_ARGUMENTS.replace(/[\n\r]+/ig, '')).matchAll(/APP_UID=(\d+).*APP_GID=(\d+)/img)];
-          if(Array.isArray(ainitAs) && ainitAs.length > 0 && Array.isArray(ainitAs[0])){
-            initAs = `${ainitAs[0][1]}:${ainitAs[0][2]}`;
           }
         }else{
-          const ainitAs = [...image.initAs.matchAll(/uid=(\d+).*gid=(\d+)/img)];
-          if(Array.isArray(ainitAs) && ainitAs.length > 0 && Array.isArray(ainitAs[0])){
-            initAs = `${ainitAs[0][1]}:${ainitAs[0][2]}`;
-          }
+          arch.push('amd64');
         }
-  
-        // distroless
-        if(!image.initAs){
-          distroless = '✅';
-        }
-  
-        // name
-        const name = image.name
-          .replace('ghcr.io/', '')
-          .replace('docker.io/', '')
-          .replace('quay.io/', '')
-          .replace(':rolling', '')
-          .replace(':latest', '')
-  
-        markdown.push(`| ${name} | ${image.size} | ${initAs} | ${distroless} | ${image.arch.join(', ')} |`);
+
+        comparison.push({
+          name:image,
+          size:`${size}${sizeSI}`,
+          initAs:await exec('docker', ['run', '--entrypoint', '/bin/sh', '--rm', image, '-c', 'id']),
+          sortBy:size,
+          arch:arch.sort(),
+        });
+      }catch(e){
+        core.warning(`exec [docker image ls] exception: ${e}`);
       }
-  
-      etc.content.comparison += markdown.join("\r\n");
-      core.info(inspect({markdown:markdown, comparison:comparison}, {showHidden:false, depth:null, colors:true}));
     }
+
+    comparison.sort((a, b) => a.sortBy - b.sortBy);
+
+    for(const image of comparison){
+      let initAs = "0:0";
+      let distroless = '❌';
+
+      // initAs
+      if(!image.initAs){
+        const ainitAs = [...(process.env?.DOCKER_IMAGE_ARGUMENTS.replace(/[\n\r]+/ig, '')).matchAll(/APP_UID=(\d+).*APP_GID=(\d+)/img)];
+        if(Array.isArray(ainitAs) && ainitAs.length > 0 && Array.isArray(ainitAs[0])){
+          initAs = `${ainitAs[0][1]}:${ainitAs[0][2]}`;
+        }
+      }else{
+        const ainitAs = [...image.initAs.matchAll(/uid=(\d+).*gid=(\d+)/img)];
+        if(Array.isArray(ainitAs) && ainitAs.length > 0 && Array.isArray(ainitAs[0])){
+          initAs = `${ainitAs[0][1]}:${ainitAs[0][2]}`;
+        }
+      }
+
+      // distroless
+      if(!image.initAs){
+        distroless = '✅';
+      }
+
+      // name
+      const name = image.name
+        .replace('ghcr.io/', '')
+        .replace('docker.io/', '')
+        .replace('quay.io/', '')
+        .replace(':rolling', '')
+        .replace(':latest', '')
+
+      markdown.push(`| ${name} | ${image.size} | ${initAs} | ${distroless} | ${image.arch.join(', ')} |`);
+    }
+
+    etc.content.comparison += markdown.join("\r\n");
+    core.info(inspect({markdown:markdown, comparison:comparison}, {showHidden:false, depth:null, colors:true}));
+  }
 
   #multiWrite(readme){
     const readmeGithub = readme
@@ -27666,6 +27666,18 @@ module.exports = class README{
     writeFileSync('./README.md', readmeGithub);
     writeFileSync('./README_NONGITHUB.md', readmeDocker);
   }
+}
+
+const arrStackFilter = function(images){
+  const self = process.env.DOCKER_IMAGE_NAME_AND_VERSION.split(':')[0];
+  const filtered = [];
+  for(const image of images){
+    if(!new RegExp(self, 'i').test(image)){
+      filtered.push(image);
+    }
+  }
+  filtered.sort();
+  return(filtered);
 }
 
 const etc = {
@@ -27690,8 +27702,9 @@ const etc = {
     caution:'# CAUTION ⚠️',
     registries:'# REGISTRIES ☁️',
     introduction:'# INTRODUCTION 📢',
+    arr_stack:'# ARR STACK IMAGES 🏴‍☠️'
   },
-  
+
   content:{
     shields:`${[
       '![size](https://img.shields.io/docker/image-size/${{ json_image }}/${{ json_semver_version }}?color=0eb305)',
@@ -27728,6 +27741,15 @@ const etc = {
     sarif:'',
     patches:'',
     comparison:"${{ title_comparison }}\r\nBelow you find a comparison between this image and the most used or original one.\r\n\r\n",
+    arr_stack:`\${{ title_arr_stack }}\r\n${arrStackFilter([
+      `This image is part of the so called arr-stack (apps to pirate and manage media content). Here is the list of all it's companion apps for the best pirate experience:`,
+      '- [11notes/sonarr](https://github.com/11notes/docker-sonarr)',
+      '- [11notes/radarr](https://github.com/11notes/docker-radarr)',
+      '- [11notes/prowlarr](https://github.com/11notes/docker-prowlarr)',
+      '- [11notes/plex](https://github.com/11notes/docker-plex)',
+      '- [11notes/sabnzbd](https://github.com/11notes/docker-sabnzbd)',
+      '- [11notes/qbittorrent](https://github.com/11notes/docker-qbittorrent)',
+    ]).join("\r\n")}`,
   },
   text:{
     tags:'These are the main tags for the image. There is also a tag for each commit and its shorthand sha256 value.',
