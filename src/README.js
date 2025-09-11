@@ -665,8 +665,8 @@ const etc = {
     patches:'',
     comparison:"${{ title_comparison }}\r\nBelow you find a comparison between this image and the most used or original one.\r\n\r\n",
     arr_stack:`\${{ title_arr_stack }}\r\nThis image is part of the so called arr-stack (apps to pirate and manage media content). Here is the list of all it's companion apps for the best pirate experience:\r\n\r\n${arrStackFilter([
-      '- [11notes/sonarr](https://github.com/11notes/docker-sonarr) - to manage your films',
-      '- [11notes/radarr](https://github.com/11notes/docker-radarr) - to manage your TV shows',
+      '- [11notes/sonarr](https://github.com/11notes/docker-sonarr) - to manage your TV shows',
+      '- [11notes/radarr](https://github.com/11notes/docker-radarr) - to manage your films',
       '- [11notes/prowlarr](https://github.com/11notes/docker-prowlarr) - to manage all your indexers',
       '- [11notes/plex](https://github.com/11notes/docker-plex) - as your media server',
       '- [11notes/sabnzbd](https://github.com/11notes/docker-sabnzbd) - as your usenet client',
