@@ -27750,6 +27750,7 @@ const etc = {
       '- [11notes/plex](https://github.com/11notes/docker-plex) - as your media server',
       '- [11notes/sabnzbd](https://github.com/11notes/docker-sabnzbd) - as your usenet client',
       '- [11notes/qbittorrent](https://github.com/11notes/docker-qbittorrent) - as your torrent client',
+      '- [11notes/configarr](https://github.com/11notes/docker-configarr) - as your TRaSH guide syncer for Sonarr and Radarr',
     ]).join("\r\n")}`,
   },
   text:{
