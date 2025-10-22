@@ -27554,6 +27554,8 @@ module.exports = class README{
       "11notes/distroless:node":["https://github.com/11notes/docker-distroless/blob/master/node.dockerfile", "runtime for javascript applications"],
       "11notes/distroless:node-stable":["https://github.com/11notes/docker-distroless/blob/master/node.dockerfile", "runtime for javascript applications (stable version)"],
       "11notes/distroless:git":["https://github.com/11notes/docker-distroless/blob/master/git.dockerfile", "app to pull and push data to git repositories"],
+      "11notes/distroless:openssl":["https://github.com/11notes/docker-distroless/blob/master/openssl.dockerfile", "app to manage SSL certificates"],
+      "11notes/distroless:mc":["https://github.com/11notes/docker-distroless/blob/master/mc.dockerfile", "app to manage minio"],
     }
     etc.content.parent = `${etc.title.parent}\r\n\${{ github:> [!IMPORTANT] }}\r\n\${{ github:> }}This image is not based on another image but uses [scratch](https://hub.docker.com/_/scratch) as the starting layer.`;
     if(this.#json?.readme?.distroless?.layers){
