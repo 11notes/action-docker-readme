@@ -334,7 +334,7 @@ module.exports = class README{
 
   #compose(file){
     // check for additional compose files
-    if(existsSync('/compose.secrets.yml')){
+    if(existsSync('./compose.secrets.yml')){
       etc.content.composeSecrets = "Checkout [compose.secrets.yml](https://github.com/11notes/docker-${{ json_name }}/blob/master/compose.secrets.yml) if you want to use secrets instead of environment variables.\r\n";
     }
 
