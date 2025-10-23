@@ -202,7 +202,7 @@ module.exports = class README{
 
     // check for compose example
     if(this.#files.compose.length > 0){
-      etc.content.compose = `${etc.title.compose}\r\n${"```"}yaml\r\n${this.#files.compose}\r\n${"```"}\r\n${etc.text.composeUIDGID}`;
+      etc.content.compose = `${etc.title.compose}\r\n${etc.content.composeSecrets}${"```"}yaml\r\n${this.#files.compose}\r\n${"```"}\r\n${etc.text.composeUIDGID}`;
     }
 
     // check for build example
@@ -333,8 +333,14 @@ module.exports = class README{
   }
 
   #compose(file){
+    // check for additional compose files
+    if(existsSync('/compose.secrets.yml')){
+      etc.content.composeSecrets = "Checkout [compose.secrets.yml](https://github.com/11notes/docker-${{ json_name }}/blob/master/compose.secrets.yml) if you want to use secrets instead of environment variables.\r\n";
+    }
+
+
     let compose = readFileSync(file).toString();
-    const yaml = YAML.parse(compose);    
+    const yaml = YAML.parse(compose);
     for(const service in yaml.services){
 
       // anchor
@@ -460,7 +466,7 @@ module.exports = class README{
         this.#jsonToTemplateVariable(json[k], `${prefix}${k}_`);
       }else{
         if(k === 'name'){
-          this.#env[`${prefix}${k.toLowerCase()}`] = `${json[k]}`.toUpperCase();
+          this.#env[`${prefix}${k.toLowerCase()}#uc`] = `${json[k]}`.toUpperCase();
         }else{
           this.#env[`${prefix}${k.toLowerCase()}`] = json[k];
         }
@@ -677,10 +683,11 @@ const etc = {
       '- [11notes/qbittorrent](https://github.com/11notes/docker-qbittorrent) - as your torrent client',
       '- [11notes/configarr](https://github.com/11notes/docker-configarr) - as your TRaSH guide syncer for Sonarr and Radarr',
     ]).join("\r\n")}`,
+    composeSecrets:'',
   },
   text:{
     tags:'These are the main tags for the image. There is also a tag for each commit and its shorthand sha256 value.',
     patches:"Unlike other popular image providers, this image contains individual CVE fixes to create a clean container image even if the developers of the original app simply forgot or refuse to do that. Why not add a PR with these fixes? Well, many developers ignore PR for CVE fixes and don’t run any code security scanners against their repos. Some simply don’t care.\r\n\r\n",
-    composeUIDGID:"To find out how you can change the default UID/GID of this container image, consult the [how-to.changeUIDGID](https://github.com/11notes/RTFM/blob/main/linux/container/image/11notes/how-to.changeUIDGID.md#change-uidgid-the-correct-way) section of my [RTFM](https://github.com/11notes/RTFM)",
+    composeUIDGID:"To find out how you can change the default UID/GID of this container image, consult the [RTFM](https://github.com/11notes/RTFM/blob/main/linux/container/image/11notes/how-to.changeUIDGID.md#change-uidgid-the-correct-way).",
   }
 };
