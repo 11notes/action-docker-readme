@@ -26978,7 +26978,7 @@ module.exports = class README{
     // setup readme
     this.#header = [
       '![banner](https://github.com/11notes/defaults/blob/main/static/img/banner.png?raw=true)',
-      `# \${{ json_name }}\r\n${etc.content.shields}`,
+      `# \${{ json_name#uc }}\r\n${etc.content.shields}`,
       this.#json.readme.description,
     ];
 
@@ -27197,6 +27197,7 @@ module.exports = class README{
         this.#jsonToTemplateVariable(json[k], `${prefix}${k}_`);
       }else{
         if(k === 'name'){
+          this.#env[`${prefix}${k.toLowerCase()}`] = json[k];
           this.#env[`${prefix}${k.toLowerCase()}#uc`] = `${json[k]}`.toUpperCase();
         }else{
           this.#env[`${prefix}${k.toLowerCase()}`] = json[k];
@@ -27372,7 +27373,6 @@ const etc = {
   content:{
     shields:`${[
       '![size](https://img.shields.io/docker/image-size/${{ json_image }}/${{ json_semver_version }}?color=0eb305)',
-      '![version](https://img.shields.io/docker/v/${{ json_image }}/${{ json_semver_version }}?color=eb7a09)',
       '![pulls](https://img.shields.io/docker/pulls/${{ json_image }}?color=2b75d6)',
       '[<img src="https://img.shields.io/github/issues/11notes/docker-${{ json_name }}?color=7842f5">](https://github.com/11notes/docker-${{ json_name }}/issues)',
       '![swiss_made](https://img.shields.io/badge/Swiss_Made-FFFFFF?labelColor=FF0000&logo=data:image/svg%2bxml;base64,PHN2ZyB2ZXJzaW9uPSIxIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDMyIDMyIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxyZWN0IHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgZmlsbD0idHJhbnNwYXJlbnQiLz4KICA8cGF0aCBkPSJtMTMgNmg2djdoN3Y2aC03djdoLTZ2LTdoLTd2LTZoN3oiIGZpbGw9IiNmZmYiLz4KPC9zdmc+)',
