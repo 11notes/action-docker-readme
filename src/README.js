@@ -237,9 +237,7 @@ module.exports = class README{
       this.#distroLess();
     }
 
-    if(this.#json?.readme?.comparison){
-      await this.#comparison();
-    }
+    await this.#comparison();
 
     // finalize env
     this.#jsonToTemplateVariable(etc);
