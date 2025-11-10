@@ -27269,7 +27269,7 @@ module.exports = class README{
         }
 
         comparison.push({
-          name:image,
+          name:image.split(":")[0],
           size:`${size}${sizeSI}`,
           initAs:await exec('docker', ['run', '--entrypoint', '/bin/sh', '--rm', image, '-c', 'id']),
           sortBy:size,
