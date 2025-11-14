@@ -580,7 +580,7 @@ module.exports = class README{
     if(comparisonSum.name.length > 0){
       const sumTotal = comparisonSum.sortBy.reduce((a, b)=>{return a + b}, 0);
       comparison.push({
-        name:comparisonSum.name.join("\r\n"),
+        name:comparisonSum.name[0].split("/")[0]+"/*",
         size:`${sumTotal}MB`,
         initAs:comparisonSum.initAs.join("\r\n"),
         sortBy:sumTotal,
