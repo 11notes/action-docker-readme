@@ -584,7 +584,7 @@ module.exports = class README{
         size:`${sumTotal}MB`,
         initAs:comparisonSum.initAs.join("\r\n"),
         sortBy:sumTotal,
-        arch:comparisonSum.arch.join("\r\n"),
+        arch:comparisonSum.arch[0],
       });
     }
 
