@@ -503,6 +503,13 @@ module.exports = class README{
   async #comparison(){
     const images = [process.env.DOCKER_IMAGE_NAME_AND_VERSION];
     const comparison = [];
+    const comparisonSum = {
+      name:[],
+      size:[],
+      initAs:[],
+      sortBy:[],
+      arch:[],
+    };
     const markdown = [`| **image** | **size on disk** | **init default as** | **[distroless](https://github.com/11notes/RTFM/blob/main/linux/container/image/distroless.md)** | supported architectures`];
     markdown.push('| ---: | ---: | :---: | :---: | :---: |');
 
@@ -537,19 +544,48 @@ module.exports = class README{
           arch.push('amd64');
         }
 
-        comparison.push({
-          name:image.split(":")[0],
-          size:`${size}${sizeSI}`,
-          initAs:await exec('docker', ['run', '--entrypoint', '/bin/sh', '--rm', image, '-c', 'id']),
-          sortBy:size,
-          arch:arch.sort(),
-        });
-        if(image === process.env.DOCKER_IMAGE_NAME_AND_VERSION){
-          this.#env.image_size = `${size}${sizeSI}`;
+        if(this.#json.readme.comparison?.sum){
+          if(image === process.env.DOCKER_IMAGE_NAME_AND_VERSION){
+            comparison.push({
+              name:image.split(":")[0],
+              size:`${size}${sizeSI}`,
+              initAs:await exec('docker', ['run', '--entrypoint', '/bin/sh', '--rm', image, '-c', 'id']),
+              sortBy:size,
+              arch:arch.sort(),
+            });
+          }else{
+            comparisonSum.name.push(image.split(":")[0]);
+            comparisonSum.size.push(`${size}${sizeSI}`);
+            comparisonSum.initAs.push(await exec('docker', ['run', '--entrypoint', '/bin/sh', '--rm', image, '-c', 'id']));
+            comparisonSum.sortBy.push(size);
+            comparisonSum.arch.push(arch.sort());
+          }
+        }else{
+          comparison.push({
+            name:image.split(":")[0],
+            size:`${size}${sizeSI}`,
+            initAs:await exec('docker', ['run', '--entrypoint', '/bin/sh', '--rm', image, '-c', 'id']),
+            sortBy:size,
+            arch:arch.sort(),
+          });
+          if(image === process.env.DOCKER_IMAGE_NAME_AND_VERSION){
+            this.#env.image_size = `${size}${sizeSI}`;
+          }
         }
       }catch(e){
         core.warning(`exec [docker image ls] exception: ${e}`);
       }
+    }
+
+    if(comparisonSum.name.length > 0){
+      const sumTotal = comparisonSum.sortBy.reduce((a, b)=>{return a + b}, 0);
+      comparison.push({
+        name:comparisonSum.name.join("\r\n"),
+        size:`${sumTotal}MB`,
+        initAs:comparisonSum.initAs.join("\r\n"),
+        sortBy:sumTotal,
+        arch:comparisonSum.arch.join("\r\n"),
+      });
     }
 
     comparison.sort((a, b) => a.sortBy - b.sortBy);
