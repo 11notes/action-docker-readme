@@ -27020,13 +27020,13 @@ module.exports = class README{
     // check if image supports unraid
     if(/"unraid":true/i.test(this.#files.workflows.tags)){
       tags.has.unraid = true;
-      tags.list.map((tag) => tags.list.push(`${tag}-unraid`));
+      tags.list.map((tag) => {if(!/-/i.test(tag)){tags.list.push(`${tag}-unraid`)}});
     }
 
     // check if image supports nobody
     if(/"nobody":true/i.test(this.#files.workflows.tags)){
       tags.has.nobody = true;
-      tags.list.map((tag) => tags.list.push(`${tag}-nobody`));
+      tags.list.map((tag) => {if(!/-/i.test(tag)){tags.list.push(`${tag}-nobody`)}});
     }
 
     // create tags content
