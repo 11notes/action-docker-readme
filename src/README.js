@@ -269,6 +269,7 @@ module.exports = class README{
       list:[],
       has:{
         unraid:false,
+        nobody:false,
         latest:false,
         stable:false,
       },
@@ -283,7 +284,19 @@ module.exports = class README{
           case /latest/i.test(tag): tags.list.push('latest'); tags.has.latest = true; break;
         }
       }
-    }    
+    }
+
+    // check if image supports unraid
+    if(/"unraid":true/i.test(this.#files.workflows.tags)){
+      tags.has.unraid = true;
+      tags.list.map((tag) => tags.list.push(`${tag}-unraid`));
+    }
+
+    // check if image supports nobody
+    if(/"nobody":true/i.test(this.#files.workflows.tags)){
+      tags.has.unraid = true;
+      tags.list.map((tag) => tags.list.push(`${tag}-nobody`));
+    }
 
     // check if image supports unraid tags
     if(/unraid|"uid":"99"/i.test(this.#files.workflows.tags) || /eleven unraid/i.test(this.#files.dockerfile)){
@@ -298,7 +311,7 @@ module.exports = class README{
         `docker pull ${this.#json.image}:${(this.#json?.semver?.version || 'latest')}`,
         `docker pull ghcr.io/${this.#json.image}:${(this.#json?.semver?.version || 'latest')}`,
         `docker pull quay.io/${this.#json.image}:${(this.#json?.semver?.version || 'latest')}`,
-      ];      
+      ];
 
       tags.markdown.push(`${etc.title.tags}\r\n${etc.text.tags}`); // title and text
       tags.markdown.push(list.join("\r\n")); // list of tags
