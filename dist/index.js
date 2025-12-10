@@ -27025,14 +27025,8 @@ module.exports = class README{
 
     // check if image supports nobody
     if(/"nobody":true/i.test(this.#files.workflows.tags)){
-      tags.has.unraid = true;
+      tags.has.nobody = true;
       tags.list.map((tag) => tags.list.push(`${tag}-nobody`));
-    }
-
-    // check if image supports unraid tags
-    if(/unraid|"uid":"99"/i.test(this.#files.workflows.tags) || /eleven unraid/i.test(this.#files.dockerfile)){
-      tags.has.unraid = true;
-      tags.list.map((tag) => tags.list.push(`${tag}-unraid`));
     }
 
     // create tags content
@@ -27068,6 +27062,10 @@ module.exports = class README{
 
       if(tags.has.unraid){
         tags.markdown.push(etc.content.unraid);
+      }
+
+      if(tags.has.nobody){
+        tags.markdown.push(etc.content.nobody);
       }
 
       etc.content.tags = tags.markdown.join("\r\n\r\n");
@@ -27404,6 +27402,7 @@ const etc = {
     built:'# BUILT WITH 🧰',
     build:'# BUILD 🚧',
     unraid:'# UNRAID VERSION 🟠',
+    nobody:'# NOBODY VERSION 👻',
     compose:'# COMPOSE ✂️',
     tips:'# GENERAL TIPS 📌',
     environment:'# ENVIRONMENT 📝',
@@ -27431,7 +27430,8 @@ const etc = {
       '${{ github:> }}* Use a reverse proxy like Traefik, Nginx, HAproxy to terminate TLS and to protect your endpoints',
       '${{ github:> }}* Use Let’s Encrypt DNS-01 challenge to obtain valid SSL certificates for your services'
     ].join("\r\n")}`,
-    unraid:"${{ title_unraid }}\r\nThis image supports unraid by default. Simply add **-unraid** to any tag and the image will run as 99:100 instead of 1000:1000 causing no issues on unraid. Enjoy.",
+    unraid:"${{ title_unraid }}\r\nThis image supports unraid by default. Simply add **-unraid** to any tag and the image will run as 99:100 instead of 1000:1000.",
+    nobody:"${{ title_nobody }}\r\nThis image supports nobody by default. Simply add **-nobody** to any tag and the image will run as 65534:65534 instead of 1000:1000.",
     build:"${{ title_build }}\r\n```dockerfile\r\n${{ include: ./build.dockerfile }}\r\n```",
     tags:'',
     synopsis:'\${{ title_synopsis }}\r\n**What can I do with this?**',
