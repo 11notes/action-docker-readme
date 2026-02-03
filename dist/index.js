@@ -27295,6 +27295,7 @@ module.exports = class README{
               sortBy:size,
               arch:arch.sort(),
             });
+            this.#env.image_size = `${size}${sizeSI}`;
           }else{
             comparisonSum.name.push(image.split(":")[0]);
             comparisonSum.size.push(`${size}${sizeSI}`);
