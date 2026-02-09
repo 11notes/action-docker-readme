@@ -735,6 +735,8 @@ const etc = {
       '- [11notes/configarr](https://github.com/11notes/docker-configarr) - as your TRaSH guide syncer for Sonarr and Radarr',
     ]).join("\r\n")}`,
     composeSecrets:'',
+    description_rootless:'run ${{ json_image }} rootless',
+    description_rootless_distroless:'run ${{ json_image }} rootless and distroless',
   },
   text:{
     tags:'These are the main tags for the image. There is also a tag for each commit and its shorthand sha256 value.',
