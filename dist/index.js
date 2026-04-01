@@ -27231,6 +27231,7 @@ module.exports = class README{
       "11notes/distroless:git":["https://github.com/11notes/docker-distroless/blob/master/git.dockerfile", "app to pull and push data to git repositories"],
       "11notes/distroless:openssl":["https://github.com/11notes/docker-distroless/blob/master/openssl.dockerfile", "app to manage SSL certificates"],
       "11notes/distroless:mc":["https://github.com/11notes/docker-distroless/blob/master/mc.dockerfile", "app to manage minio"],
+      "11notes/distroless:nc":["https://github.com/11notes/docker-distroless/blob/master/nc.dockerfile", "app to test tcp/udp connections"],
     }
     etc.content.parent = `${etc.title.parent}\r\n\${{ github:> [!IMPORTANT] }}\r\n\${{ github:> }}This image is not based on another image but uses [scratch](https://hub.docker.com/_/scratch) as the starting layer.`;
     if(this.#json?.readme?.distroless?.layers){
@@ -27470,7 +27471,7 @@ const etc = {
       '- [11notes/qbittorrent](https://github.com/11notes/docker-qbittorrent) - as your torrent client',
       '- [11notes/configarr](https://github.com/11notes/docker-configarr) - as your TRaSH guide syncer for Sonarr and Radarr',
     ]).join("\r\n")}`,
-    composeSecrets:'',    
+    composeSecrets:'',
     description_rootless:'run ${{ json_image }} rootless',
     description_rootless_distroless:'run ${{ json_image }} rootless and distroless',
   },
