@@ -543,9 +543,9 @@ module.exports = class README{
       await exec('docker', ['image', 'pull', image]);
       const arch = [];
       try{
-        const sizeRaw = JSON.parse(await exec('docker', ['image', 'ls', '--filter', `reference=${image}`, '--format', 'json']))?.Size;
-        const size = parseInt(sizeRaw.replace(/[A-Za-z]+/i, ""));
-        const sizeSI = sizeRaw.match(/[A-Za-z]+/i)[0];
+        const sizeBytes = await exec('docker', ['image', 'inspect', image, '--format', `'{{.Size}}'`]);
+        const size = parseInt(sizeBytes/1048576);
+        const sizeSI = 'MB';
         const json = JSON.parse(await exec('docker', ['manifest', 'inspect', image]));
         if(json?.manifests){
           for(const manifest of json.manifests){
@@ -635,6 +635,7 @@ module.exports = class README{
         .replace('ghcr.io/', '')
         .replace('docker.io/', '')
         .replace('quay.io/', '')
+        .replace('docker.cloudsmith.io/', '')
         .replace(':rolling', '')
         .replace(':latest', '')
 
