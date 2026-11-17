@@ -27274,7 +27274,7 @@ module.exports = class README{
       await exec('docker', ['image', 'pull', image]);
       const arch = [];
       try{
-        const sizeBytes = await exec('docker', ['image', 'inspect', image, '--format', `'{{.Size}}'`]);
+        const sizeBytes = parseInt(await exec('docker', ['image', 'inspect', image, '--format', `'{{.Size}}'`]));
         const size = parseInt(sizeBytes/1048576);
         const sizeSI = 'MB';
         const json = JSON.parse(await exec('docker', ['manifest', 'inspect', image]));
