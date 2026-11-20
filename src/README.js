@@ -543,8 +543,13 @@ module.exports = class README{
       await exec('docker', ['image', 'pull', image]);
       const arch = [];
       try{
-        const sizeBytes = parseInt(await exec('docker', ['image', 'inspect', image, '--format', `'{{.Size}}'`]));
-        const size = parseInt(sizeBytes/1048576);
+        const history = await exec('docker', ['history', '--human=false', '--format', '{{.Size}}', image], false);
+        const sizeBytes = history
+          .split(/\r?\n/)
+          .map(s => parseInt(s, 10))
+          .filter(n => Number.isFinite(n))
+          .reduce((a, b) => a + b, 0);
+        const size = parseInt((sizeBytes/1e6).toFixed(0));
         const sizeSI = 'MB';
         const json = JSON.parse(await exec('docker', ['manifest', 'inspect', image]));
         if(json?.manifests){
